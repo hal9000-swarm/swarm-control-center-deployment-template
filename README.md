@@ -1,9 +1,6 @@
 # About
-This is a Azure Resource Manager Template to deploy SCC Frontend and SCC API Gateway. See:
-* https://github.com/hal9000-swarm/swarm-control-center-api-gateway
-* https://github.com/hal9000-swarm/swarm-control-center-frontend
+This is an Azure Resource Manager Template to deploy the Swarm Control Center to your Azure enviornment. See https://docs.swarm-analytics.com/swarm-control-center/getting-started/installation for an installation handbook.
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fhal9000-swarm%2Fscc-deployment%2Fmaster%2FsccDeployment.json%3Ftoken%3DAOONTU4HZBZPLJT2FETVUIC6XVTNI)
 
 # Usage
 Generate a App Registration with the predefined values (this is required until registration and assignment of roles is fully supported in Azure).
@@ -30,16 +27,10 @@ Approve the APIs:
 az ad app permission admin-consent  --id <appID>
 ```
 
+Perform the deployment via the Azure CLI or use the template via the deployment link:
 
-Navigate to the new app registration and create a service principal / Enterprise Application for it, assign roles and owners
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgithub.com%2Fhal9000-swarm%2Fswarm-control-center-deployment-template%2Fblob%2Fmaster%2FsccDeployment.json)
 
-
-* See https://docs.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-script-template?tabs=CLI for further extensions.
-* See https://docs.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-tutorial-local-template for a general description. 
-
-Copy and adapt the parameter file for a specific customer.
-
-Example via the Azure CLI (https://docs.microsoft.com/en-us/cli/azure/?view=azure-cli-latest)
 ```bash
 az deployment group create \
   --name "${instance}-swarm-control-center" \
