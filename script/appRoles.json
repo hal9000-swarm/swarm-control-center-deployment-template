@@ -1,0 +1,20 @@
+[
+		{ 
+    		"allowedMemberTypes": [
+				"User"
+			],
+			"description": "Superadmins can manage everything.",
+			"displayName": "Superadmin",
+			"isEnabled": true,
+			"value": "superadmin"
+		},
+		{
+			"allowedMemberTypes": [
+				"User"
+			],
+			"description": "Operators can maintain boxes.",
+			"displayName": "Operator",	
+			"isEnabled": true,
+			"value": "operator"
+		}
+]
