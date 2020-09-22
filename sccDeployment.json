@@ -51,6 +51,9 @@
         "dockerRegistryPassword": {
             "type": "securestring"
         },
+        "dockerRegistryUser": {
+            "type": "string"
+        },
         "ADApplicationId": {
             "type": "string",
             "metadata": {
@@ -85,7 +88,7 @@
                         },
                         {
                             "name": "DOCKER_REGISTRY_SERVER_USERNAME",
-                            "value": "swarmccfrontend"
+                             "value": "[parameters('dockerRegistryUser')]"
                         },
                         {
                             "name": "DOCKER_ENABLE_CI",
@@ -149,9 +152,9 @@
                             "name": "DOCKER_REGISTRY_SERVER_URL",
                             "value": "https://swarmccfrontend.azurecr.io"
                         },
-                        {
+                         {
                             "name": "DOCKER_REGISTRY_SERVER_USERNAME",
-                            "value": "swarmccfrontend"
+                             "value": "[parameters('dockerRegistryUser')]"
                         },
                         {
                             "name": "DOCKER_ENABLE_CI",
