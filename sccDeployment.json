@@ -112,7 +112,7 @@
                         },
                         {
                             "name": "REACT_APP_API_URL",
-                            "value": "[concat('https://', parameters('apiGatewayName'), '.azurewebsites.net/v1/')]"
+                            "value": "[concat('https://', parameters('apiGatewayName'), '.azurewebsites.net/v2/')]"
                         },
                         {
                             "name": "REACT_APP_AUTHORITY",
