@@ -39,14 +39,14 @@
             "metadata": {
                 "description": "Version of the API gateway."
             },
-            "defaultValue": "1.0.19"
+            "defaultValue": "2.0.0"
         },
         "frontendVersion": {
             "type": "string",
             "metadata": {
                 "description": "Version of the frontend application."
             }, 
-            "defaultValue": "1.0.19"
+            "defaultValue": "2.0.0"
         },
         "dockerRegistryPassword": {
             "type": "securestring"
