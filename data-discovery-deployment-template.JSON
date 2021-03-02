@@ -1,0 +1,248 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+
+  "parameters": {
+    "service-name": {
+      "type": "string",
+      "metadata": {
+        "description": "A distinguishable name. For example the name of the organization."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for the resources."
+      }
+    },
+    "applicationResourceGroup": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().name]",
+      "metadata": {
+        "description": "Resource group for the applications."
+      }
+    },
+    "databaseServerAdminName": {
+      "type": "string",
+      "defaultValue": "admin",
+      "metadata": {
+        "description": "The administrator username for the db-server"
+      }
+    },
+    "databaseServerAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The administrator password for the db-server"
+      }
+    },
+    "dockerRegistryPassword": {
+      "type": "securestring"
+    },
+    "dockerRegistryUser": {
+      "type": "string"
+    },
+    "storageAccountKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Specifies the key of the storage account where the SQL-bacpac file is stored."
+      }
+    },
+    "bacpacUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the URL of the BACPAC file."
+      }
+    },
+    "iotHubConnnectionString": {
+      "type": "string",
+      "metadata": {
+        "description": "IoT Hub Connection String."
+      }
+    },
+    "data-to-cube-version": {
+      "type": "string",
+      "metadata": {
+        "description": "The version of the data-to-cube function."
+      }
+    },
+    "iotConsumerGroup": {
+      "type": "string",
+      "defaultValue": "datadiscovery",
+      "metadata": {
+        "description": "The consumer group you want to use for data-discovery"
+      }
+    },
+    "functionsStorageAccountName": {
+      "type": "string",
+      "maxLength": 24,
+      "metadata": {
+        "description": "A name for the storage account created with max. 24 character only number and lowercase letters."
+      }
+    }
+  },
+  "variables": {
+    "db-server-name": "[concat('swarm-data-discovery-db-server-', parameters('service-name'))]",
+    "function-name": "[concat('swarm-data-discovery-data-to-cube-', parameters('service-name'))]",
+    "service-plan-name": "[concat('swarm-data-discovery-app-service-plan-', parameters('service-name'))]",
+    "storage-account-name": "[concat('swarm-data-discovery-storage-account-', parameters('service-name'))]"
+  },
+  "resources": [
+    {
+      "name": "[variables('db-server-name')]",
+      "apiVersion": "2019-06-01-preview",
+      "type": "Microsoft.Sql/servers",
+      "location": "[parameters('location')]",
+      "properties": {
+        "administratorLogin": "[parameters('databaseServerAdminName')]",
+        "administratorLoginPassword": "[parameters('databaseServerAdminPassword')]",
+        "publicNetworkAccess": "Enabled"
+      },
+      "resources": [
+        {
+          "type": "firewallrules",
+          "apiVersion": "2015-05-01-preview",
+          "name": "AllowAllAzureIps",
+          "location": "[parameters('location')]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Sql/servers/', variables('db-server-name'))]"
+          ],
+          "properties": {
+            "startIpAddress": "0.0.0.0",
+            "endIpAddress": "0.0.0.0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "[concat(variables('db-server-name'), '/', 'ep')]",
+      "apiVersion": "2017-10-01-preview",
+      "type": "Microsoft.Sql/servers/elasticPools",
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/', variables('db-server-name'))]"
+      ],
+      "location": "[parameters('location')]",
+      "properties": {
+      }
+    },
+    {
+      "name": "[concat(variables('db-server-name'), '/db')]",
+      "apiVersion": "2019-06-01-preview",
+      "type": "Microsoft.Sql/servers/databases",
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/', variables('db-server-name'))]",
+        "[resourceId('Microsoft.Sql/servers/elasticPools', variables('db-server-name') ,'ep')]"
+      ],
+      "location": "[parameters('location')]",
+      "properties": {
+        "elasticPoolId": "[resourceId('Microsoft.Sql/servers/elasticpools', variables('db-server-name'), 'ep')]"
+      },
+      "resources": [
+        {
+          "type": "extensions",
+          "apiVersion": "2014-04-01",
+          "name": "Import",
+          "dependsOn": [
+            "[resourceId('Microsoft.Sql/servers/databases', variables('db-server-name'), 'db')]"
+          ],
+          "properties": {
+            "storageKeyType": "StorageAccessKey",
+            "storageKey": "[parameters('storageAccountKey')]",
+            "storageUri": "[parameters('bacpacUrl')]",
+            "administratorLogin": "[parameters('databaseServerAdminName')]",
+            "administratorLoginPassword": "[parameters('databaseServerAdminPassword')]",
+            "operationMode": "Import"
+          }
+        }
+      ]
+    },
+    {
+      "name": "[variables('service-plan-name')]",
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2018-02-01",
+      "location": "[parameters('location')]",
+      "kind": "linux",
+      "properties": {
+        "reserved": true
+      },
+      "sku": {
+        "tier": "Basic",
+        "name": "B1"
+      }
+    },
+    {
+      "name": "[parameters('functionsStorageAccountName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2019-06-01",
+      "location": "[parameters('location')]",
+      "kind": "StorageV2",
+      "sku": {
+        "name": "Standard_LRS"
+      }
+    },
+    {
+      "apiVersion": "2018-11-01",
+      "name": "[variables('function-name')]",
+      "type": "Microsoft.Web/sites",
+      "kind": "functionapp,linux,container",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', variables('db-server-name'), 'db')]"
+      ],
+      "properties": {
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "DOCKER_REGISTRY_SERVER_URL",
+              "value": "https://swarm.azurecr.io"
+            },
+            {
+              "name": "DOCKER_REGISTRY_SERVER_USERNAME",
+              "value": "[parameters('dockerRegistryUser')]"
+            },
+            {
+              "name": "DOCKER_ENABLE_CI",
+              "value": "true"
+            },
+            {
+              "name": "DOCKER_REGISTRY_SERVER_PASSWORD",
+              "value": "[parameters('dockerRegistryPassword')]"
+            },
+            {
+              "name": "EventHubConnectionString",
+              "value": "[parameters('ioTHubConnnectionString')]"
+            },
+            {
+              "name": "DBConnectionString",
+              "value": "[concat('jdbc:sqlserver://', variables('db-server-name'), '.database.windows.net:1433;database=db;user=', parameters('databaseServerAdminName'), '@', variables('db-server-name'), ';password=', parameters('databaseServerAdminPassword'), ';encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;')]"
+            },
+            {
+              "name": "ConfigurationConsumerGroup",
+              "value": "[parameters('iotConsumerGroup')]"
+            },
+            {
+              "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+              "value": "false"
+            },
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~3"
+            },
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('functionsStorageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('functionsStorageAccountName')), '2019-06-01').keys[0].value, ';EndpointSuffix=core.windows.net')]"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "java"
+            }
+          ],
+          "linuxFxVersion": "[concat('DOCKER|swarm.azurecr.io/data-to-cube:',parameters('data-to-cube-version'))]",
+          "httpLoggingEnabled": true,
+          "logsDirectorySizeLimit": 35
+        },
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+      }
+    }
+  ]
+}
