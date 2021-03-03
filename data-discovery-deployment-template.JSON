@@ -13,89 +13,119 @@
       "type": "string",
       "defaultValue": "[resourceGroup().location]",
       "metadata": {
-        "description": "Location for the resources."
+        "description": "Location for the created resources."
       }
     },
     "applicationResourceGroup": {
       "type": "string",
       "defaultValue": "[resourceGroup().name]",
       "metadata": {
-        "description": "Resource group for the applications."
+        "description": "Resource group for the created resources."
+      }
+    },
+    "databaseServer": {
+      "type": "string",
+      "defaultValue": "createNew",
+      "metadata": {
+        "description": "Keep on 'createNew' if you have choosen not to use an existing databaseserver, else enter the name of existing database server (needs to grant access to azzure IP's). If you use a existing database-server you also have to provide an elastic pool."
+      }
+    },
+    "databaseElaticPool": {
+      "type": "string",
+      "defaultValue": "createNew",
+      "metadata": {
+        "description": "Keep on 'createNew' if you have choosen not to use existing databaseserver, else enter the name of existing elastic pool on previous mentioned database-server. If you use a existing database-server you also have to provide an elastic pool."
+      }
+    },
+    "appServicePlanName": {
+      "type": "string",
+      "defaultValue": "createNew",
+      "metadata": {
+        "description": "Keep on 'createNew' if you have choosen not to use existing App Service Plan, else enter the name of your App Service Plan"
       }
     },
     "databaseServerAdminName": {
       "type": "string",
       "defaultValue": "datadiscoveryadmin",
       "metadata": {
-        "description": "The administrator username for the db-server"
+        "description": "The administrator username for the db-server (choose one if you have selected to not use an existing database server)."
       }
     },
     "databaseServerAdminPassword": {
       "type": "securestring",
       "metadata": {
-        "description": "The administrator password for the db-server"
+        "description": "The administrator password for the db-server (choose one if you have selected to not use an existing database server)."
       }
-    },
-    "dockerRegistryPassword": {
-      "type": "securestring"
     },
     "dockerRegistryUser": {
       "type": "string"
     },
+    "dockerRegistryPassword": {
+      "type": "securestring"
+    },
     "storageAccountKey": {
       "type": "securestring",
       "metadata": {
-        "description": "Specifies the key of the storage account where the SQL-bacpac file is stored."
+        "description": "Specifies the key of the storage account where the SQL-bacpac file is stored (will be removed once storage account is fixed)."
       }
     },
     "bacpacUrl": {
       "type": "string",
       "metadata": {
-        "description": "Specifies the URL of the BACPAC file."
+        "description": "Specifies the URL of the BACPAC file in the storage account (will be removed once storage account is fixed)."
       }
     },
-    "iotHubConnnectionString": {
+    "iotHubEndpointConnnectionString": {
       "type": "string",
       "metadata": {
-        "description": "IoT Hub Connection String."
+        "description": "IoT Hub Connection String staring with 'Endpoint='."
       }
     },
     "iotConsumerGroup": {
       "type": "string",
       "defaultValue": "datadiscovery",
       "metadata": {
-        "description": "The consumer group you want to use for data-discovery"
+        "description": "The consumer group you want to use for data-discovery. Probably has to be created"
+      }
+    },
+    "creatNewStorageAccount": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Choose wether to create new staorage account or use an existing one (supporting azure function apps)"
       }
     },
     "functionsStorageAccountName": {
       "type": "string",
       "maxLength": 24,
       "metadata": {
-        "description": "A name for the storage account created with max. 24 character only number and lowercase letters."
+        "description": "The name of the Storage account you want to use. Specify a name if you have choosen not to use an existing account. The name can only contain lowercase letters and numbers!"
       }
     },
     "sccAppId": {
       "type": "string",
       "metadata": {
-        "description": "The App Id / Tenant of the Swarm Control Center"
+        "description": "The App Id"
       }
     },
     "sccAppTenant": {
       "type": "string",
       "metadata": {
-        "description": "The App Id / Tenant of the Swarm Control Center"
+        "description": "The App Tenant of the Swarm Control Center"
       }
     }
   },
   "variables": {
-    "db-server-name": "[concat('swarm-data-discovery-db-server-', parameters('service-name'))]",
-    "function-name": "[concat('swarm-data-discovery-data-to-cube-', parameters('service-name'))]",
-    "service-plan-name": "[concat('swarm-data-discovery-app-service-plan-', parameters('service-name'))]",
-    "storage-account-name": "[concat('swarm-data-discovery-storage-account-', parameters('service-name'))]",
-    "api-name": "[concat('swarm-data-dd-api-', parameters('service-name'))]"
+    "db-server-name": "[if(equals(parameters('databaseServer'), 'createNew'), concat(parameters('service-name'),'-swarm-data-discovery-db-server'), parameters('databaseServer'))]",
+    "elastic-pool-name": "[if(equals(parameters('databaseServer'), 'createNew'), 'data-discovery-elastic-pool', parameters('databaseElaticPool'))]",
+    "db-name": "[concat(parameters('service-name'),'-swarm-data-discovery-db')]",
+    "function-name": "[concat(parameters('service-name'),'-swarm-data-discovery-data-to-cube')]",
+    "service-plan-name": "[if(equals(parameters('appServicePlanName'), 'createNew'),concat(parameters('service-name'),'-swarm-data-discovery-app-service-plan'), parameters('appServicePlanName'))]",
+    "api-name": "[concat( parameters('service-name'), '-swarm-data-discovery-api')]"
   },
   "resources": [
     {
+      "condition": "[equals(parameters('databaseServer'), 'createNew')]",
       "name": "[variables('db-server-name')]",
       "apiVersion": "2019-06-01-preview",
       "type": "Microsoft.Sql/servers",
@@ -107,6 +137,7 @@
       },
       "resources": [
         {
+          "condition": "[equals(parameters('databaseServer'), 'createNew')]",
           "type": "firewallrules",
           "apiVersion": "2015-05-01-preview",
           "name": "AllowAllAzureIps",
@@ -122,7 +153,8 @@
       ]
     },
     {
-      "name": "[concat(variables('db-server-name'), '/', 'ep')]",
+      "condition": "[equals(parameters('databaseServer'), 'createNew')]",
+      "name": "[concat(variables('db-server-name'), '/', variables('elastic-pool-name'))]",
       "apiVersion": "2017-10-01-preview",
       "type": "Microsoft.Sql/servers/elasticPools",
       "dependsOn": [
@@ -133,16 +165,16 @@
       }
     },
     {
-      "name": "[concat(variables('db-server-name'), '/discovery-db')]",
+      "name": "[concat(variables('db-server-name'), '/', variables('db-name'))]",
       "apiVersion": "2019-06-01-preview",
       "type": "Microsoft.Sql/servers/databases",
       "dependsOn": [
         "[resourceId('Microsoft.Sql/servers/', variables('db-server-name'))]",
-        "[resourceId('Microsoft.Sql/servers/elasticPools', variables('db-server-name') ,'ep')]"
+        "[resourceId('Microsoft.Sql/servers/elasticPools', variables('db-server-name') ,variables('elastic-pool-name'))]"
       ],
       "location": "[parameters('location')]",
       "properties": {
-        "elasticPoolId": "[resourceId('Microsoft.Sql/servers/elasticpools', variables('db-server-name'), 'ep')]"
+        "elasticPoolId": "[resourceId('Microsoft.Sql/servers/elasticpools', variables('db-server-name'), variables('elastic-pool-name'))]"
       },
       "resources": [
         {
@@ -150,7 +182,7 @@
           "apiVersion": "2014-04-01",
           "name": "Import",
           "dependsOn": [
-            "[resourceId('Microsoft.Sql/servers/databases', variables('db-server-name'), 'discovery-db')]"
+            "[resourceId('Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]"
           ],
           "properties": {
             "storageKeyType": "StorageAccessKey",
@@ -164,6 +196,7 @@
       ]
     },
     {
+      "condition": "[equals(parameters('appServicePlanName'), 'createNew')]",
       "name": "[variables('service-plan-name')]",
       "type": "Microsoft.Web/serverfarms",
       "apiVersion": "2018-02-01",
@@ -178,6 +211,7 @@
       }
     },
     {
+      "condition": "[parameters('creatNewStorageAccount')]",
       "name": "[parameters('functionsStorageAccountName')]",
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2019-06-01",
@@ -194,7 +228,7 @@
       "kind": "functionapp,linux,container",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[resourceId('Microsoft.Sql/servers/databases', variables('db-server-name'), 'discovery-db')]",
+        "[resourceId('Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]",
         "[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]"
       ],
       "properties": {
@@ -219,11 +253,11 @@
             },
             {
               "name": "EventHubConnectionString",
-              "value": "[parameters('ioTHubConnnectionString')]"
+              "value": "[parameters('iotHubEndpointConnnectionString')]"
             },
             {
               "name": "DBConnectionString",
-              "value": "[concat('jdbc:sqlserver://', variables('db-server-name'), '.database.windows.net:1433;database=discovery-db;user=', parameters('databaseServerAdminName'), '@', variables('db-server-name'), ';password=', parameters('databaseServerAdminPassword'), ';encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;')]"
+              "value": "[concat('jdbc:sqlserver://', variables('db-server-name'), '.database.windows.net:1433;database=', variables('db-name'),';user=', parameters('databaseServerAdminName'), '@', variables('db-server-name'), ';password=', parameters('databaseServerAdminPassword'), ';encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;')]"
             },
             {
               "name": "ConfigurationConsumerGroup",
@@ -246,7 +280,7 @@
               "value": "java"
             }
           ],
-          "linuxFxVersion": "[concat('DOCKER|swarm.azurecr.io/data-to-cube:latest')]",
+          "linuxFxVersion": "[concat('DOCKER|swarm.azurecr.io/data-to-cube:1.0.1')]",
           "httpLoggingEnabled": true,
           "logsDirectorySizeLimit": 35
         },
@@ -260,7 +294,7 @@
       "kind": "app,linux,container",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[resourceId('Microsoft.Sql/servers/databases', variables('db-server-name'), 'discovery-db')]",
+        "[resourceId('Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]",
         "[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]"
       ],
       "properties": {
@@ -289,7 +323,7 @@
             },
             {
               "name": "CUBEJS_DB_NAME",
-              "value": "discovery-db"
+              "value": "[variables('db-name')]"
             },
             {
               "name": "CUBEJS_DB_PORT",
@@ -332,7 +366,7 @@
               "value": "2ea6ecefda06e8cae189c5722069672c9ddc1da467696d4aefe1391b09e7733478f709b79bd8a398a011c0566b06b78c3470a5a150090d2899b2d2bad4e6b7e9"
             }
           ],
-          "linuxFxVersion": "[concat('DOCKER|swarm.azurecr.io/swarm-cube-api:latest')]",
+          "linuxFxVersion": "[concat('DOCKER|swarm.azurecr.io/swarm-cube-api:1.1.3')]",
           "httpLoggingEnabled": true,
           "logsDirectorySizeLimit": 35
 
