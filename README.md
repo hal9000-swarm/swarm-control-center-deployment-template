@@ -42,7 +42,7 @@ az deployment group create \
 
 # Usage Data Discovery
 
-Will be but in Azure Template Spec when complete. 
+Will be put in Azure Template Spec when complete. 
 Meanwhile go to azure portal -> 
 create resource -> 
 template deployment -> 
@@ -55,4 +55,4 @@ insert values ->
 review and create ->
 create
 
-The bacpac url at the moment is https://storageaccountswarma54a.blob.core.windows.net/bacpac/db-2021-3-2-10-21.bacpac and the accesskey can be found in the storageaccount54a. The iot hub has to have a corresponding consumer group. data-to-cube version would be 1.0.1
+The bacpac url at the moment is https://storageaccountswarma54a.blob.core.windows.net/bacpac/db-2021-3-2-10-21.bacpac and the accesskey can be found in the storageaccount54a. The iot hub has to have a corresponding consumer group.
