@@ -162,15 +162,15 @@
       ],
       "location": "[parameters('location')]",
       "sku": {
-        "name": "StandardPool",
-        "tier": "Standard",
+        "name": "BasicPool",
+        "tier": "Basic",
         "capacity": 50
       },
       "properties": {
         "maxSizeBytes": 53687091200,
         "perDatabaseSettings": {
           "minCapacity": 0,
-          "maxCapacity": 50
+          "maxCapacity": 5
         }
       }
     },
