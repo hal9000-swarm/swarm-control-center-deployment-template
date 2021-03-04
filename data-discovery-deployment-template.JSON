@@ -161,7 +161,17 @@
         "[resourceId('Microsoft.Sql/servers/', variables('db-server-name'))]"
       ],
       "location": "[parameters('location')]",
+      "sku": {
+        "name": "StandardPool",
+        "tier": "Standard",
+        "capacity": 50
+      },
       "properties": {
+        "maxSizeBytes": 53687091200,
+        "perDatabaseSettings": {
+          "minCapacity": 0,
+          "maxCapacity": 50
+        }
       }
     },
     {
