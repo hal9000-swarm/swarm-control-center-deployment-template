@@ -369,10 +369,6 @@
               "value": "[parameters('databaseServerAdminPassword')]"
             },
             {
-              "name": "CUBEJS_DEV_MODE",
-              "value": "true"
-            },
-            {
               "name": "CUBEJS_DB_SSL",
               "value": "true"
             },
