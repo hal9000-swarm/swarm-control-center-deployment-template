@@ -5,6 +5,7 @@
   "parameters": {
     "service-name": {
       "type": "string",
+      "maxLength": 26,
       "metadata": {
         "description": "A distinguishable name. For example the name of the organization."
       }
@@ -122,7 +123,7 @@
     "elastic-pool-name": "[if(equals(parameters('databaseServer'), 'createNew'), concat(parameters('service-name'),'-swarm-data-discovery-elastic-pool'), parameters('databaseElaticPool'))]",
     "db-name": "[concat(parameters('service-name'),'-swarm-data-discovery-db')]",
     "function-name": "[concat(parameters('service-name'),'-swarm-data-discovery-data-to-cube')]",
-    "service-plan-name": "[if(equals(parameters('appServicePlanName'), 'createNew'),concat(parameters('service-name'),'-swarm-data-discovery-app-service-plan'), parameters('appServicePlanName'))]",
+    "service-plan-name": "[if(equals(parameters('appServicePlanName'), 'createNew'),concat(parameters('service-name'),'-swarm-data-discovery-plan'), parameters('appServicePlanName'))]",
     "api-name": "[concat( parameters('service-name'), '-swarm-data-discovery-api')]"
   },
   "resources": [
