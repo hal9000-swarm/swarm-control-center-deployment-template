@@ -56,18 +56,6 @@
     "dockerRegistryPassword": {
       "type": "securestring"
     },
-    "storageAccountKey": {
-      "type": "securestring",
-      "metadata": {
-        "description": "Specifies the key of the storage account where the SQL-bacpac file is stored (will be removed once storage account is fixed)."
-      }
-    },
-    "bacpacUrl": {
-      "type": "string",
-      "metadata": {
-        "description": "Specifies the URL of the BACPAC file in the storage account (will be removed once storage account is fixed)."
-      }
-    },
     "iotHubEndpointConnnectionString": {
       "type": "string",
       "metadata": {
@@ -106,7 +94,22 @@
       "metadata": {
         "description": "The App Tenant of the Swarm Control Center"
       }
+    },
+    "cubeApiVersion": {
+      "type": "string",
+      "defaultValue": "1.1.3",
+      "metadata": {
+        "description": "Version of the used cube-api container."
+      }
+    },
+    "dataToCubeVersion": {
+      "type": "string",
+      "defaultValue": "1.0.1",
+      "metadata": {
+        "description": "Version of the used data-to-cube container."
+      }
     }
+
   },
   "variables": {
     "db-server-name": "[if(equals(parameters('databaseServer'), 'createNew'), concat(parameters('service-name'),'-swarm-data-discovery-db-server'), parameters('databaseServer'))]",
@@ -188,8 +191,8 @@
           ],
           "properties": {
             "storageKeyType": "StorageAccessKey",
-            "storageKey": "[parameters('storageAccountKey')]",
-            "storageUri": "[parameters('bacpacUrl')]",
+            "storageKey": "mum1cuGDlLTnyOOOj08MR5kesoTkzwaREn1MhbPVzhi55FhWGOARcLPgDFzqTkLpwmN/hUu/pFLc+K9txqY1qw==",
+            "storageUri": "https://swarmdatadiscovery.blob.core.windows.net/data-discovery-bacpacs/db-2021-3-2-10-21.bacpac",
             "administratorLogin": "[parameters('databaseServerAdminName')]",
             "administratorLoginPassword": "[parameters('databaseServerAdminPassword')]",
             "operationMode": "Import"
@@ -282,7 +285,7 @@
               "value": "java"
             }
           ],
-          "linuxFxVersion": "[concat('DOCKER|swarm.azurecr.io/data-to-cube:1.0.1')]",
+          "linuxFxVersion": "[concat('DOCKER|swarm.azurecr.io/data-to-cube:', parameters('dataToCubeVersion'))]",
           "httpLoggingEnabled": true,
           "logsDirectorySizeLimit": 35
         },
@@ -364,7 +367,7 @@
               "value": "2ea6ecefda06e8cae189c5722069672c9ddc1da467696d4aefe1391b09e7733478f709b79bd8a398a011c0566b06b78c3470a5a150090d2899b2d2bad4e6b7e9"
             }
           ],
-          "linuxFxVersion": "[concat('DOCKER|swarm.azurecr.io/swarm-cube-api:1.1.3')]",
+          "linuxFxVersion": "[concat('DOCKER|swarm.azurecr.io/swarm-cube-api:', parameters('cubeApiVersion'))]",
           "httpLoggingEnabled": true,
           "logsDirectorySizeLimit": 35
 
