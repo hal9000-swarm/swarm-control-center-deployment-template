@@ -98,7 +98,7 @@
     },
     "cubeApiVersion": {
       "type": "string",
-      "defaultValue": "1.1.3",
+      "defaultValue": "1.1.4",
       "metadata": {
         "description": "Version of the used cube-api container."
       }
@@ -113,7 +113,7 @@
     "bacPacStorageKey": {
       "type": "securestring",
       "metadata": {
-        "description": "The storage account for the storage account where the bacpac file is"
+        "description": "The key for the storage account where the bacpac file is"
       }
     }
 
