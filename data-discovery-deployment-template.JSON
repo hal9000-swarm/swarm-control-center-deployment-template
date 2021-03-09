@@ -1,0 +1,386 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+
+  "parameters": {
+    "service-name": {
+      "type": "string",
+      "maxLength": 26,
+      "metadata": {
+        "description": "A distinguishable name. For example the name of the organization."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for the created resources."
+      }
+    },
+    "databaseServer": {
+      "type": "string",
+      "defaultValue": "createNew",
+      "metadata": {
+        "description": "Keep on 'createNew' if you have choosen not to use an existing databaseserver, else enter the name of existing database server (needs to grant access to azzure IP's). If you use a existing database-server you also have to provide an elastic pool."
+      }
+    },
+    "databaseElaticPool": {
+      "type": "string",
+      "defaultValue": "createNew",
+      "metadata": {
+        "description": "Keep on 'createNew' if you have choosen not to use existing databaseserver, else enter the name of existing elastic pool on previous mentioned database-server. If you use a existing database-server you also have to provide an elastic pool."
+      }
+    },
+    "appServicePlanName": {
+      "type": "string",
+      "defaultValue": "createNew",
+      "metadata": {
+        "description": "Keep on 'createNew' if you have choosen not to use existing App Service Plan, else enter the name of your App Service Plan"
+      }
+    },
+    "databaseServerAdminName": {
+      "type": "string",
+      "defaultValue": "datadiscoveryadmin",
+      "metadata": {
+        "description": "The administrator username for the db-server (choose one if you have selected to not use an existing database server)."
+      }
+    },
+    "databaseServerAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The administrator password for the db-server (choose one if you have selected to not use an existing database server)."
+      }
+    },
+    "dockerRegistryUser": {
+      "type": "string"
+    },
+    "dockerRegistryPassword": {
+      "type": "securestring"
+    },
+    "iotHubEndpointConnnectionString": {
+      "type": "string",
+      "metadata": {
+        "description": "IoT Hub Connection String staring with 'Endpoint='."
+      }
+    },
+    "iotConsumerGroup": {
+      "type": "string",
+      "defaultValue": "datadiscovery",
+      "metadata": {
+        "description": "The consumer group you want to use for data-discovery. Probably has to be created"
+      }
+    },
+    "creatNewStorageAccount": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Choose wether to create new staorage account or use an existing one (supporting azure function apps)"
+      }
+    },
+    "functionsStorageAccountName": {
+      "type": "string",
+      "maxLength": 24,
+      "metadata": {
+        "description": "The name of the Storage account you want to use. Specify a name if you have choosen not to use an existing account. The name can only contain lowercase letters and numbers!"
+      }
+    },
+    "sccAppId": {
+      "type": "string",
+      "metadata": {
+        "description": "The App Id"
+      }
+    },
+    "sccAppTenant": {
+      "type": "string",
+      "metadata": {
+        "description": "The App Tenant of the Swarm Control Center"
+      }
+    },
+    "cubeApiVersion": {
+      "type": "string",
+      "defaultValue": "1.1.4",
+      "metadata": {
+        "description": "Version of the used cube-api container."
+      }
+    },
+    "dataToCubeVersion": {
+      "type": "string",
+      "defaultValue": "1.0.1",
+      "metadata": {
+        "description": "Version of the used data-to-cube container."
+      }
+    },
+    "bacPacStorageKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The key for the storage account where the bacpac file is"
+      }
+    }
+
+  },
+  "variables": {
+    "db-server-name": "[if(equals(parameters('databaseServer'), 'createNew'), concat(parameters('service-name'),'-swarm-data-discovery-db-server'), parameters('databaseServer'))]",
+    "elastic-pool-name": "[if(equals(parameters('databaseServer'), 'createNew'), concat(parameters('service-name'),'-swarm-data-discovery-elastic-pool'), parameters('databaseElaticPool'))]",
+    "db-name": "[concat(parameters('service-name'),'-swarm-data-discovery-db')]",
+    "function-name": "[concat(parameters('service-name'),'-swarm-data-discovery-data-to-cube')]",
+    "service-plan-name": "[if(equals(parameters('appServicePlanName'), 'createNew'),concat(parameters('service-name'),'-swarm-data-discovery-plan'), parameters('appServicePlanName'))]",
+    "api-name": "[concat( parameters('service-name'), '-swarm-data-discovery-api')]"
+  },
+  "resources": [
+    {
+      "condition": "[equals(parameters('databaseServer'), 'createNew')]",
+      "name": "[variables('db-server-name')]",
+      "apiVersion": "2019-06-01-preview",
+      "type": "Microsoft.Sql/servers",
+      "location": "[parameters('location')]",
+      "properties": {
+        "administratorLogin": "[parameters('databaseServerAdminName')]",
+        "administratorLoginPassword": "[parameters('databaseServerAdminPassword')]",
+        "publicNetworkAccess": "Enabled"
+      },
+      "resources": [
+        {
+          "condition": "[equals(parameters('databaseServer'), 'createNew')]",
+          "type": "firewallrules",
+          "apiVersion": "2015-05-01-preview",
+          "name": "AllowAllAzureIps",
+          "location": "[parameters('location')]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Sql/servers/', variables('db-server-name'))]"
+          ],
+          "properties": {
+            "startIpAddress": "0.0.0.0",
+            "endIpAddress": "0.0.0.0"
+          }
+        }
+      ]
+    },
+    {
+      "condition": "[equals(parameters('databaseServer'), 'createNew')]",
+      "name": "[concat(variables('db-server-name'), '/', variables('elastic-pool-name'))]",
+      "apiVersion": "2017-10-01-preview",
+      "type": "Microsoft.Sql/servers/elasticPools",
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/', variables('db-server-name'))]"
+      ],
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "BasicPool",
+        "tier": "Basic",
+        "capacity": 50
+      },
+      "properties": {
+        "perDatabaseSettings": {
+          "minCapacity": 0,
+          "maxCapacity": 5
+        }
+      }
+    },
+    {
+      "name": "[concat(variables('db-server-name'), '/', variables('db-name'))]",
+      "apiVersion": "2019-06-01-preview",
+      "type": "Microsoft.Sql/servers/databases",
+      "dependsOn": [
+        "[resourceId(resourceGroup().name ,'Microsoft.Sql/servers/', variables('db-server-name'))]",
+        "[resourceId(resourceGroup().name ,'Microsoft.Sql/servers/elasticPools', variables('db-server-name') ,variables('elastic-pool-name'))]"
+      ],
+      "location": "[parameters('location')]",
+      "properties": {
+        "elasticPoolId": "[resourceId(resourceGroup().name, 'Microsoft.Sql/servers/elasticpools', variables('db-server-name'), variables('elastic-pool-name'))]"
+      },
+      "resources": [
+        {
+          "type": "extensions",
+          "apiVersion": "2014-04-01",
+          "name": "Import",
+          "dependsOn": [
+            "[resourceId('Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]"
+          ],
+          "properties": {
+            "storageKeyType": "StorageAccessKey",
+            "storageKey": "[parameters('bacPacStorageKey')]",
+            "storageUri": "https://swarmdatadiscovery.blob.core.windows.net/data-discovery-bacpacs/db-2021-3-2-10-21.bacpac",
+            "administratorLogin": "[parameters('databaseServerAdminName')]",
+            "administratorLoginPassword": "[parameters('databaseServerAdminPassword')]",
+            "operationMode": "Import"
+          }
+        }
+      ]
+    },
+    {
+      "condition": "[equals(parameters('appServicePlanName'), 'createNew')]",
+      "name": "[variables('service-plan-name')]",
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2018-02-01",
+      "location": "[parameters('location')]",
+      "kind": "linux",
+      "properties": {
+        "reserved": true
+      },
+      "sku": {
+        "tier": "Basic",
+        "name": "B1"
+      }
+    },
+    {
+      "condition": "[parameters('creatNewStorageAccount')]",
+      "name": "[parameters('functionsStorageAccountName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2019-06-01",
+      "location": "[parameters('location')]",
+      "kind": "StorageV2",
+      "sku": {
+        "name": "Standard_LRS"
+      }
+    },
+    {
+      "apiVersion": "2018-11-01",
+      "name": "[variables('function-name')]",
+      "type": "Microsoft.Web/sites",
+      "kind": "functionapp,linux,container",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId(resourceGroup().name, 'Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]",
+        "[resourceId(resourceGroup().name, 'Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+      ],
+      "properties": {
+        "siteConfig": {
+          "alwaysOn": true,
+          "appSettings": [
+            {
+              "name": "DOCKER_REGISTRY_SERVER_URL",
+              "value": "https://swarm.azurecr.io"
+            },
+            {
+              "name": "DOCKER_REGISTRY_SERVER_USERNAME",
+              "value": "[parameters('dockerRegistryUser')]"
+            },
+            {
+              "name": "DOCKER_ENABLE_CI",
+              "value": "true"
+            },
+            {
+              "name": "DOCKER_REGISTRY_SERVER_PASSWORD",
+              "value": "[parameters('dockerRegistryPassword')]"
+            },
+            {
+              "name": "EventHubConnectionString",
+              "value": "[parameters('iotHubEndpointConnnectionString')]"
+            },
+            {
+              "name": "DBConnectionString",
+              "value": "[concat('jdbc:sqlserver://', variables('db-server-name'), '.database.windows.net:1433;database=', variables('db-name'),';user=', parameters('databaseServerAdminName'), '@', variables('db-server-name'), ';password=', parameters('databaseServerAdminPassword'), ';encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;')]"
+            },
+            {
+              "name": "ConfigurationConsumerGroup",
+              "value": "[parameters('iotConsumerGroup')]"
+            },
+            {
+              "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+              "value": "false"
+            },
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~3"
+            },
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('functionsStorageAccountName'), ';AccountKey=', listKeys(resourceId(resourceGroup().name , 'Microsoft.Storage/storageAccounts', parameters('functionsStorageAccountName')), '2019-06-01').keys[0].value, ';EndpointSuffix=core.windows.net')]"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "java"
+            }
+          ],
+          "linuxFxVersion": "[concat('DOCKER|swarm.azurecr.io/data-to-cube:', parameters('dataToCubeVersion'))]",
+          "httpLoggingEnabled": true,
+          "logsDirectorySizeLimit": 35
+        },
+        "serverFarmId": "[resourceId(resourceGroup().name ,'Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+      }
+    },
+    {
+      "name": "[variables('api-name')]",
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2018-11-01",
+      "kind": "app,linux,container",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId(resourceGroup().name ,'Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]",
+        "[resourceId(resourceGroup().name, 'Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+      ],
+      "properties": {
+        "siteConfig": {
+          "alwaysOn": true,
+          "appSettings": [
+            {
+              "name": "DOCKER_REGISTRY_SERVER_URL",
+              "value": "https://swarm.azurecr.io"
+            },
+            {
+              "name": "DOCKER_REGISTRY_SERVER_USERNAME",
+              "value": "[parameters('dockerRegistryUser')]"
+            },
+            {
+              "name": "DOCKER_ENABLE_CI",
+              "value": "true"
+            },
+            {
+              "name": "DOCKER_REGISTRY_SERVER_PASSWORD",
+              "value": "[parameters('dockerRegistryPassword')]"
+            },
+            {
+              "name": "CUBEJS_DB_HOST",
+              "value": "[concat(variables('db-server-name'), '.database.windows.net')]"
+            },
+            {
+              "name": "CUBEJS_DB_NAME",
+              "value": "[variables('db-name')]"
+            },
+            {
+              "name": "CUBEJS_DB_PORT",
+              "value": "1433"
+            },
+            {
+              "name": "CUBEJS_DB_USER",
+              "value": "[parameters('databaseServerAdminName')]"
+            },
+            {
+              "name": "CUBEJS_DB_PASS",
+              "value": "[parameters('databaseServerAdminPassword')]"
+            },
+            {
+              "name": "CUBEJS_DB_SSL",
+              "value": "true"
+            },
+            {
+              "name": "CUBEJS_DB_TYPE",
+              "value": "mssql"
+            },
+            {
+              "name": "CUBEJS_CACHE_AND_QUEUE_DRIVER",
+              "value": "memory"
+            },
+            {
+              "name": "CUBEJS_AD_APP_ID",
+              "value": "[parameters('sccAppId')]"
+            },
+            {
+              "name": "CUBEJS_AD_APP_TENANT",
+              "values": "[parameters('sccAppTenant')]"
+            },
+            {
+              "name": "CUBEJS_API_SECRET",
+              "value": "2ea6ecefda06e8cae189c5722069672c9ddc1da467696d4aefe1391b09e7733478f709b79bd8a398a011c0566b06b78c3470a5a150090d2899b2d2bad4e6b7e9"
+            }
+          ],
+          "linuxFxVersion": "[concat('DOCKER|swarm.azurecr.io/swarm-cube-api:', parameters('cubeApiVersion'))]",
+          "httpLoggingEnabled": true,
+          "logsDirectorySizeLimit": 35
+
+        },
+        "serverFarmId": "[resourceId(resourceGroup().name, 'Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+      }
+    }
+  ]
+}

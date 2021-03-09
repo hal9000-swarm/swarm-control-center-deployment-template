@@ -1,8 +1,9 @@
 # About
 This is an Azure Resource Manager Template to deploy the Swarm Control Center to your Azure enviornment. See https://docs.swarm-analytics.com/swarm-control-center/getting-started/installation for an installation handbook.
+Includes also first template for data-discovery deployment (database and data-piping functions app at the moment).
 
 
-# Usage
+# Usage SCC
 Generate a App Registration with the predefined values (this is required until registration and assignment of roles is fully supported in Azure).
 
 ```bash
@@ -38,3 +39,20 @@ az deployment group create \
   --template-file sccDeployment.json \
   --parameters deployments/${instance}Parameters.json
 ```
+
+# Usage Data Discovery
+
+Will be put in Azure Template Spec when complete. 
+Meanwhile go to azure portal -> 
+create resource -> 
+template deployment -> 
+create -> 
+build your own template -> 
+load file -> 
+select data-discovery-deployment-template ->
+save ->
+insert values ->
+review and create ->
+create
+
+The bacpac url at the moment is https://storageaccountswarma54a.blob.core.windows.net/bacpac/db-2021-3-2-10-21.bacpac and the accesskey can be found in the storageaccount54a. The iot hub has to have a corresponding consumer group.
