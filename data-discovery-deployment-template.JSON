@@ -16,13 +16,6 @@
         "description": "Location for the created resources."
       }
     },
-    "applicationResourceGroup": {
-      "type": "string",
-      "defaultValue": "[resourceGroup().name]",
-      "metadata": {
-        "description": "Resource group for the created resources."
-      }
-    },
     "databaseServer": {
       "type": "string",
       "defaultValue": "createNew",
@@ -37,25 +30,11 @@
         "description": "Keep on 'createNew' if you have choosen not to use existing databaseserver, else enter the name of existing elastic pool on previous mentioned database-server. If you use a existing database-server you also have to provide an elastic pool."
       }
     },
-    "databaseResourceGroup": {
-      "type": "string",
-      "defaultValue": "[resourceGroup().name]",
-      "metadata": {
-        "description": "Only change if the given database is in a different resource group"
-      }
-    },
     "appServicePlanName": {
       "type": "string",
       "defaultValue": "createNew",
       "metadata": {
         "description": "Keep on 'createNew' if you have choosen not to use existing App Service Plan, else enter the name of your App Service Plan"
-      }
-    },
-    "appServicePlanResourceGroup": {
-      "type": "string",
-      "defaultValue": "[resourceGroup().name]",
-      "metadata": {
-        "description": "Only change if the given App Service Plan is in a different resource group"
       }
     },
     "databaseServerAdminName": {
@@ -116,13 +95,6 @@
         "description": "The name of the Storage account you want to use. Specify a name if you have choosen not to use an existing account. The name can only contain lowercase letters and numbers!"
       }
     },
-    "functionStorageAccountResourceGroup": {
-      "type": "string",
-      "defaultValue": "[resourceGroup().name]",
-      "metadata": {
-        "description": "Only change if the given Function Storage Account is in a different resource group"
-      }
-    },
     "sccAppId": {
       "type": "string",
       "metadata": {
@@ -138,7 +110,7 @@
   },
   "variables": {
     "db-server-name": "[if(equals(parameters('databaseServer'), 'createNew'), concat(parameters('service-name'),'-swarm-data-discovery-db-server'), parameters('databaseServer'))]",
-    "elastic-pool-name": "[if(equals(parameters('databaseServer'), 'createNew'), 'data-discovery-elastic-pool', parameters('databaseElaticPool'))]",
+    "elastic-pool-name": "[if(equals(parameters('databaseServer'), 'createNew'), concat(parameters('service-name'),'-swarm-data-discovery-elastic-pool'), parameters('databaseElaticPool'))]",
     "db-name": "[concat(parameters('service-name'),'-swarm-data-discovery-db')]",
     "function-name": "[concat(parameters('service-name'),'-swarm-data-discovery-data-to-cube')]",
     "service-plan-name": "[if(equals(parameters('appServicePlanName'), 'createNew'),concat(parameters('service-name'),'-swarm-data-discovery-app-service-plan'), parameters('appServicePlanName'))]",
@@ -188,7 +160,6 @@
         "capacity": 50
       },
       "properties": {
-        "maxSizeBytes": 53687091200,
         "perDatabaseSettings": {
           "minCapacity": 0,
           "maxCapacity": 5
@@ -200,12 +171,12 @@
       "apiVersion": "2019-06-01-preview",
       "type": "Microsoft.Sql/servers/databases",
       "dependsOn": [
-        "[resourceId(parameters('databaseResourceGroup') ,'Microsoft.Sql/servers/', variables('db-server-name'))]",
-        "[resourceId(parameters('databaseResourceGroup') ,'Microsoft.Sql/servers/elasticPools', variables('db-server-name') ,variables('elastic-pool-name'))]"
+        "[resourceId(resourceGroup().name ,'Microsoft.Sql/servers/', variables('db-server-name'))]",
+        "[resourceId(resourceGroup().name ,'Microsoft.Sql/servers/elasticPools', variables('db-server-name') ,variables('elastic-pool-name'))]"
       ],
       "location": "[parameters('location')]",
       "properties": {
-        "elasticPoolId": "[resourceId(parameters('databaseResourceGroup'), 'Microsoft.Sql/servers/elasticpools', variables('db-server-name'), variables('elastic-pool-name'))]"
+        "elasticPoolId": "[resourceId(resourceGroup().name, 'Microsoft.Sql/servers/elasticpools', variables('db-server-name'), variables('elastic-pool-name'))]"
       },
       "resources": [
         {
@@ -259,8 +230,8 @@
       "kind": "functionapp,linux,container",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[resourceId(parameters('databaseResourceGroup'), 'Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]",
-        "[resourceId(parameters('appServicePlanResourceGroup'), 'Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+        "[resourceId(resourceGroup().name, 'Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]",
+        "[resourceId(resourceGroup().name, 'Microsoft.Web/serverfarms', variables('service-plan-name'))]"
       ],
       "properties": {
         "siteConfig": {
@@ -304,7 +275,7 @@
             },
             {
               "name": "AzureWebJobsStorage",
-              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('functionsStorageAccountName'), ';AccountKey=', listKeys(resourceId(parameters('functionStorageAccountResourceGroup'), 'Microsoft.Storage/storageAccounts', parameters('functionsStorageAccountName')), '2019-06-01').keys[0].value, ';EndpointSuffix=core.windows.net')]"
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('functionsStorageAccountName'), ';AccountKey=', listKeys(resourceId(resourceGroup().name , 'Microsoft.Storage/storageAccounts', parameters('functionsStorageAccountName')), '2019-06-01').keys[0].value, ';EndpointSuffix=core.windows.net')]"
             },
             {
               "name": "FUNCTIONS_WORKER_RUNTIME",
@@ -315,7 +286,7 @@
           "httpLoggingEnabled": true,
           "logsDirectorySizeLimit": 35
         },
-        "serverFarmId": "[resourceId(parameters('appServicePlanResourceGroup') ,'Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+        "serverFarmId": "[resourceId(resourceGroup().name ,'Microsoft.Web/serverfarms', variables('service-plan-name'))]"
       }
     },
     {
@@ -325,8 +296,8 @@
       "kind": "app,linux,container",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[resourceId(parameters('databaseResourceGroup') ,'Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]",
-        "[resourceId(parameters('appServicePlanResourceGroup'), 'Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+        "[resourceId(resourceGroup().name ,'Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]",
+        "[resourceId(resourceGroup().name, 'Microsoft.Web/serverfarms', variables('service-plan-name'))]"
       ],
       "properties": {
         "siteConfig": {
@@ -398,7 +369,7 @@
           "logsDirectorySizeLimit": 35
 
         },
-        "serverFarmId": "[resourceId(parameters('appServicePlanResourceGroup'), 'Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+        "serverFarmId": "[resourceId(resourceGroup().name, 'Microsoft.Web/serverfarms', variables('service-plan-name'))]"
       }
     }
   ]
