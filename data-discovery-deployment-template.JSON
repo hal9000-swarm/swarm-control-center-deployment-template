@@ -108,6 +108,12 @@
       "metadata": {
         "description": "Version of the used data-to-cube container."
       }
+    },
+    "bacPacStorageKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The storage account for the storage account where the bacpac file is"
+      }
     }
 
   },
@@ -191,7 +197,7 @@
           ],
           "properties": {
             "storageKeyType": "StorageAccessKey",
-            "storageKey": "mum1cuGDlLTnyOOOj08MR5kesoTkzwaREn1MhbPVzhi55FhWGOARcLPgDFzqTkLpwmN/hUu/pFLc+K9txqY1qw==",
+            "storageKey": "[parameters('bacPacStorageKey')]",
             "storageUri": "https://swarmdatadiscovery.blob.core.windows.net/data-discovery-bacpacs/db-2021-3-2-10-21.bacpac",
             "administratorLogin": "[parameters('databaseServerAdminName')]",
             "administratorLoginPassword": "[parameters('databaseServerAdminPassword')]",
