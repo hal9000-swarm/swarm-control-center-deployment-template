@@ -98,7 +98,7 @@
     },
     "cubeApiVersion": {
       "type": "string",
-      "defaultValue": "1.1.4",
+      "defaultValue": "1.1.5",
       "metadata": {
         "description": "Version of the used cube-api container."
       }
