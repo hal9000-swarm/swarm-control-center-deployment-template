@@ -57,12 +57,6 @@
     "dockerRegistryPassword": {
       "type": "securestring"
     },
-    "iotHubEndpointConnnectionString": {
-      "type": "string",
-      "metadata": {
-        "description": "IoT Hub Connection String staring with 'Endpoint='."
-      }
-    },
     "iotConsumerGroup": {
       "type": "string",
       "defaultValue": "datadiscovery",
@@ -104,10 +98,30 @@
         "description": "Version of the used data-to-cube container."
       }
     },
+    "sccFrontendVersion": {
+      "type": "string",
+      "defaultValue": "3.3.4",
+      "metadata": {
+        "description": "Version of the used scc-frontend container."
+      }
+    },
+    "sccGatewayVersion": {
+      "type": "string",
+      "defaultValue": "3.1.2",
+      "metadata": {
+        "description": "Version of the used scc-frontend container."
+      }
+    },
     "bacPacStorageKey": {
       "type": "securestring",
       "metadata": {
         "description": "The key for the storage account where the bacpac file is"
+      }
+    },
+    {
+      "sccFrontendName": {
+        "type": "string",
+        "metadata": "The frontend name of the scc (must correspond to the reply URI of the AD application)"
       }
     }
 
@@ -116,11 +130,80 @@
     "db-server-name": "[if(equals(parameters('databaseServer'), 'createNew'), concat(parameters('service-name'),'-swarm-data-discovery-db-server'), parameters('databaseServer'))]",
     "elastic-pool-name": "[if(equals(parameters('databaseServer'), 'createNew'), concat(parameters('service-name'),'-swarm-data-discovery-elastic-pool'), parameters('databaseElaticPool'))]",
     "db-name": "[concat(parameters('service-name'),'-swarm-data-discovery-db')]",
+    "iot-hub-name": "[concat(parameters('service-name'),'-swarm-iot-hub')]",
+    "iot-hub-dps-name": "[concat(parameters('service-name'),'-swarm-iot-hub-dps')]",
     "function-name": "[concat(parameters('service-name'),'-swarm-data-discovery-data-to-cube')]",
     "service-plan-name": "[if(equals(parameters('appServicePlanName'), 'createNew'),concat(parameters('service-name'),'-swarm-data-discovery-plan'), parameters('appServicePlanName'))]",
-    "api-name": "[concat( parameters('service-name'), '-swarm-data-discovery-api')]"
+    "api-name": "[concat( parameters('service-name'), '-swarm-data-discovery-api')]",
+    "scc-name": "[concat( parameters('service-name'), '-scc-frontend')]",
+    "scc-gateway-name": "[concat( parameters('service-name'), '-scc-gateway')]"
   },
   "resources": [
+
+    {
+      "name": "[variables('iot-hub-name')]",
+      "apiVersion": "2020-03-01",
+      "type": "Microsoft.Devices/IotHubs",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "S1",
+        "capacity": 1
+      },
+      "properties": {
+        "publicNetworkAccess": "Enabled",
+        "eventHubEndpoints": {
+          "events": {
+            "retentionTimeInDays": 1,
+            "partitionCount": 4
+          }
+        },
+        "cloudToDevice": {
+          "defaultTtlAsIso8601": "PT1H",
+          "maxDeliveryCount": 10,
+          "feedback": {
+            "ttlAsIso8601": "PT1H",
+            "lockDurationAsIso8601": "PT60S",
+            "maxDeliveryCount": 10
+          }
+        },
+        "messagingEndpoints": {
+          "fileNotifications": {
+            "ttlAsIso8601": "PT1H",
+            "lockDurationAsIso8601": "PT1M",
+            "maxDeliveryCount": 10
+          }
+        }
+      }
+    },
+    {
+      "name": "[concat(variables('iot-hub-name'), '/events/', parameters('iotConsumerGroup'))]",
+      "type": "Microsoft.Devices/IotHubs/eventHubEndpoints/ConsumerGroups",
+      "apiVersion": "2020-03-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Devices/IotHubs', variables('iot-hub-name'))]"
+      ]
+    },
+    {
+      "name": "[variables('iot-hub-dps-name')]",
+      "type": "Microsoft.Devices/provisioningServices",
+      "apiVersion": "2018-01-22",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "S1",
+        "capacity": 1
+      },
+      "properties": {
+        "state": "Active",
+        "provisioningState": "Succeeded",
+        "iotHubs": [
+          {
+            "connectionString": "[concat('HostName=', reference(resourceId('Microsoft.Devices/IoTHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).hostName, ';SharedAccessKeyName=iothubowner;SharedAccessKey=', listKeys(resourceId('Microsoft.Devices/IotHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).value[0].primaryKey)]",
+            "location": "northeurope"
+          }
+        ],
+        "allocationPolicy": "Hashed"
+      }
+    },
     {
       "condition": "[equals(parameters('databaseServer'), 'createNew')]",
       "name": "[variables('db-server-name')]",
@@ -213,7 +296,7 @@
       },
       "sku": {
         "tier": "Basic",
-        "name": "B1"
+        "name": "B2"
       }
     },
     {
@@ -235,7 +318,8 @@
       "location": "[parameters('location')]",
       "dependsOn": [
         "[resourceId(resourceGroup().name, 'Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]",
-        "[resourceId(resourceGroup().name, 'Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+        "[resourceId(resourceGroup().name, 'Microsoft.Web/serverfarms', variables('service-plan-name'))]",
+        "[resourceId(resourceGroup().name, 'Microsoft.Devices/IotHubs', variables('iot-hub-name'))]"
       ],
       "properties": {
         "siteConfig": {
@@ -259,7 +343,7 @@
             },
             {
               "name": "EventHubConnectionString",
-              "value": "[parameters('iotHubEndpointConnnectionString')]"
+              "value": "[concat('Endpoint=', reference(resourceId('Microsoft.Devices/IoTHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).eventHubEndpoints.events.endpoint, ';SharedAccessKeyName=iothubowner;SharedAccessKey=', listKeys(resourceId('Microsoft.Devices/IotHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).value[0].primaryKey, ';EntityPath=', reference(resourceId('Microsoft.Devices/IoTHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).eventHubEndpoints.events.path)]"
             },
             {
               "name": "DBConnectionString",
@@ -369,6 +453,126 @@
             }
           ],
           "linuxFxVersion": "[concat('DOCKER|swarm.azurecr.io/swarm-cube-api:', parameters('cubeApiVersion'))]",
+          "httpLoggingEnabled": true,
+          "logsDirectorySizeLimit": 35
+
+        },
+        "serverFarmId": "[resourceId(resourceGroup().name, 'Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+      }
+    },
+    {
+      "name": "[parameters('sccFrontendName')]",
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2018-11-01",
+      "kind": "app,linux,container",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId(resourceGroup().name ,'Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]",
+        "[resourceId(resourceGroup().name, 'Microsoft.Web/serverfarms', variables('service-plan-name'))]",
+        "[resourceId(resourceGroup().name, 'Microsoft.Devices/IotHubs', variables('iot-hub-name'))]"
+      ],
+      "properties": {
+        "siteConfig": {
+          "alwaysOn": true,
+          "appSettings": [
+            {
+              "name": "DOCKER_REGISTRY_SERVER_URL",
+              "value": "https://swarm.azurecr.io"
+            },
+            {
+              "name": "DOCKER_REGISTRY_SERVER_USERNAME",
+              "value": "[parameters('dockerRegistryUser')]"
+            },
+            {
+              "name": "DOCKER_ENABLE_CI",
+              "value": "true"
+            },
+            {
+              "name": "DOCKER_REGISTRY_SERVER_PASSWORD",
+              "value": "[parameters('dockerRegistryPassword')]"
+            },
+            {
+              "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+              "value": "false"
+            },
+            {
+              "name": "WEBSITES_HTTPLOGGING_RETENTION_DAYS",
+              "value": "5"
+            },
+            {
+              "name": "REACT_APP_AAD_APP_CLIENT_ID",
+              "value": "[parameters('sccAppId')]"
+            },
+            {
+              "name": "REACT_APP_API_URL",
+              "value": "[concat('https://', variables('scc-gateway-name'), '.azurewebsites.net/v2/')]"
+            },
+            {
+              "name": "REACT_APP_AUTHORITY",
+              "value": "[concat('https://login.microsoftonline.com/', subscription().tenantId)]"
+            },
+            {
+              "name": "DATA_API_URL",
+              "value": "[concat('https://', variables('api-name'), '.azurewebsites.net')]"
+            }
+          ],
+          "linuxFxVersion": "[concat('DOCKER|swarm.azurecr.io/swarmccfrontend:', parameters('sccFrontendVersion'))]",
+          "httpLoggingEnabled": true,
+          "logsDirectorySizeLimit": 35
+
+        },
+        "serverFarmId": "[resourceId(resourceGroup().name, 'Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+      }
+    },
+    {
+      "name": "[variables('scc-gateway-name')]",
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2018-11-01",
+      "kind": "app,linux,container",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId(resourceGroup().name ,'Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]",
+        "[resourceId(resourceGroup().name, 'Microsoft.Web/serverfarms', variables('service-plan-name'))]",
+        "[resourceId(resourceGroup().name, 'Microsoft.Devices/IotHubs', variables('iot-hub-name'))]"
+      ],
+      "properties": {
+        "siteConfig": {
+          "alwaysOn": true,
+          "appSettings": [
+            {
+              "name": "DOCKER_REGISTRY_SERVER_URL",
+              "value": "https://swarm.azurecr.io"
+            },
+            {
+              "name": "DOCKER_REGISTRY_SERVER_USERNAME",
+              "value": "[parameters('dockerRegistryUser')]"
+            },
+            {
+              "name": "DOCKER_ENABLE_CI",
+              "value": "true"
+            },
+            {
+              "name": "DOCKER_REGISTRY_SERVER_PASSWORD",
+              "value": "[parameters('dockerRegistryPassword')]"
+            },
+            {
+              "name": "ADD_APP_CLIENT_ID",
+              "value": "[parameters('sccAppId')]"
+            },
+            {
+              "name": "ADD_TENANT_ID",
+              "value": "[subscription().tenantId]"
+            },
+            {
+              "name": "DB_CONNECTION",
+              "value": "[concat('jdbc:sqlserver://', variables('db-server-name'), '.database.windows.net:1433;database=', variables('db-name'),';user=', parameters('databaseServerAdminName'), '@', variables('db-server-name'), ';password=', parameters('databaseServerAdminPassword'), ';encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;')]"
+            },
+            {
+              "name": "IOT_HUB_CONNECTION_STRING",
+              "value": "[concat('HostName=', reference(resourceId('Microsoft.Devices/IoTHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).hostName, ';SharedAccessKeyName=iothubowner;SharedAccessKey=', listKeys(resourceId('Microsoft.Devices/IotHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).value[0].primaryKey)]"
+            }
+          ],
+          "linuxFxVersion": "[concat('DOCKER|swarm.azurecr.io/swarm-control-center-api-gateway:', parameters('sccGatewayVersion'))]",
           "httpLoggingEnabled": true,
           "logsDirectorySizeLimit": 35
 
