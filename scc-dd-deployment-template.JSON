@@ -117,14 +117,7 @@
       "metadata": {
         "description": "The key for the storage account where the bacpac file is"
       }
-    },
-    "sccFrontendName": {
-        "type": "string",
-      "metadata": {
-        "description": "The frontend name of the scc (must correspond to the reply URI of the AD application)"
-      }
     }
-
   },
   "variables": {
     "db-server-name": "[if(equals(parameters('databaseServer'), 'createNew'), concat(parameters('service-name'),'-swarm-data-discovery-db-server'), parameters('databaseServer'))]",
@@ -135,7 +128,7 @@
     "function-name": "[concat(parameters('service-name'),'-swarm-data-discovery-data-to-cube')]",
     "service-plan-name": "[if(equals(parameters('appServicePlanName'), 'createNew'),concat(parameters('service-name'),'-swarm-data-discovery-plan'), parameters('appServicePlanName'))]",
     "api-name": "[concat( parameters('service-name'), '-swarm-data-discovery-api')]",
-    "scc-name": "[concat( parameters('service-name'), '-scc-frontend')]",
+    "scc-name": "[concat( parameters('service-name'), '-swarm-control-center')]",
     "scc-gateway-name": "[concat( parameters('service-name'), '-scc-gateway')]"
   },
   "resources": [
@@ -445,7 +438,7 @@
             },
             {
               "name": "CUBEJS_AD_APP_TENANT",
-              "values": "[subscription().tenantId]"
+              "value": "[subscription().tenantId]"
             },
             {
               "name": "CUBEJS_API_SECRET",
@@ -461,7 +454,7 @@
       }
     },
     {
-      "name": "[parameters('sccFrontendName')]",
+      "name": "[variables('scc-name')]",
       "type": "Microsoft.Web/sites",
       "apiVersion": "2018-11-01",
       "kind": "app,linux,container",

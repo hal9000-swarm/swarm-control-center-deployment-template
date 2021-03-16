@@ -73,8 +73,10 @@ create
 
 The docker registry key and the bacpac storage key can be found in 1Password ('swarm docker registry' and 'data discovery storage account key')
 
-The scc frontend name has to be corresponding to the reply URI of the AD Application. e.g. 'test-swarm-control-center' if the reply-URI is https://test-swarm-control-center.azurewebsites.net
+The service name has to be the same as the instancename choosen for the enterprise application.
 
 Your SCC with data-discovery should be up and running after everything has deployed and all docker-containers are running. (CUBEJS_AD_APP_TENANT has to be set manually again.)
 
 DPS-Enrollment-group still has to be created in order to add devices to the control center. CUBEJS_AD_APP_TENANT has to be set manually again.
+
+Azure iot hub deployment also has to be put on the iot-hub by hand.
