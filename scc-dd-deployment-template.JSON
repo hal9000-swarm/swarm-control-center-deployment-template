@@ -7,7 +7,7 @@
       "type": "string",
       "maxLength": 26,
       "metadata": {
-        "description": "A distinguishable name. For example the name of the organization."
+        "description": "A distinguishable name. For example the name of the organization. Has to match the first part of the enterprise application name. (<service-name>-swarm-control-center)"
       }
     },
     "location": {
