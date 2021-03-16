@@ -121,7 +121,7 @@
     "sccFrontendName": {
         "type": "string",
       "metadata": {
-        "The frontend name of the scc (must correspond to the reply URI of the AD application)"
+        "description": "The frontend name of the scc (must correspond to the reply URI of the AD application)"
       }
     }
 
