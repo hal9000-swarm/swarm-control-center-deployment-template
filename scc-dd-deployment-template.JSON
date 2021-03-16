@@ -118,10 +118,10 @@
         "description": "The key for the storage account where the bacpac file is"
       }
     },
-    {
-      "sccFrontendName": {
+    "sccFrontendName": {
         "type": "string",
-        "metadata": "The frontend name of the scc (must correspond to the reply URI of the AD application)"
+      "metadata": {
+        "The frontend name of the scc (must correspond to the reply URI of the AD application)"
       }
     }
 
