@@ -191,7 +191,7 @@
         "iotHubs": [
           {
             "connectionString": "[concat('HostName=', reference(resourceId('Microsoft.Devices/IoTHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).hostName, ';SharedAccessKeyName=iothubowner;SharedAccessKey=', listKeys(resourceId('Microsoft.Devices/IotHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).value[0].primaryKey)]",
-            "location": "northeurope"
+            "location": "[parameters('location')]"
           }
         ],
         "allocationPolicy": "Hashed"
