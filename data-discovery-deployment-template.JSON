@@ -361,7 +361,7 @@
             },
             {
               "name": "CUBEJS_AD_APP_TENANT",
-              "values": "[subscription().tenantId]"
+              "value": "[subscription().tenantId]"
             },
             {
               "name": "CUBEJS_API_SECRET",
