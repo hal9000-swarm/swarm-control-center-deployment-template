@@ -42,8 +42,8 @@ az deployment group create \
 
 # Usage Data Discovery
 
-Will be put in Azure Template Spec when complete. 
-Meanwhile go to azure portal -> 
+
+Go to azure portal -> 
 create resource -> 
 template deployment -> 
 create -> 
@@ -55,4 +55,28 @@ insert values ->
 review and create ->
 create
 
-The bacpac url at the moment is https://storageaccountswarma54a.blob.core.windows.net/bacpac/db-2021-3-2-10-21.bacpac and the accesskey can be found in the storageaccount54a. The iot hub has to have a corresponding consumer group.
+
+# Usage SCC + Data Discovery
+Follow the steps of 'Usage SCC' until 'Approve APIs' to create the Enterprise Application
+
+Go to azure portal -> 
+create resource -> 
+template deployment -> 
+create -> 
+build your own template -> 
+load file -> 
+select scc-dd-deployment-template ->
+save ->
+insert values ->
+review and create ->
+create
+
+The docker registry key and the bacpac storage key can be found in 1Password ('swarm docker registry' and 'data discovery storage account key')
+
+The service name has to be the same as the instancename choosen for the enterprise application.
+
+Your SCC with data-discovery should be up and running after everything has deployed and all docker-containers are running. (CUBEJS_AD_APP_TENANT has to be set manually again.)
+
+DPS-Enrollment-group still has to be created in order to add devices to the control center. CUBEJS_AD_APP_TENANT has to be set manually again.
+
+Azure iot hub deployment also has to be put on the iot-hub by hand.
