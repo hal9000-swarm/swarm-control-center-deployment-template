@@ -86,21 +86,21 @@
     },
     "cubeApiVersion": {
       "type": "string",
-      "defaultValue": "1.1.5",
+      "defaultValue": "2.0.0",
       "metadata": {
         "description": "Version of the used cube-api container."
       }
     },
     "dataToCubeVersion": {
       "type": "string",
-      "defaultValue": "1.0.1",
+      "defaultValue": "1.0.2",
       "metadata": {
         "description": "Version of the used data-to-cube container."
       }
     },
     "sccFrontendVersion": {
       "type": "string",
-      "defaultValue": "3.3.4",
+      "defaultValue": "3.4.0",
       "metadata": {
         "description": "Version of the used scc-frontend container."
       }
