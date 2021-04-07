@@ -92,14 +92,14 @@
     },
     "cubeApiVersion": {
       "type": "string",
-      "defaultValue": "1.1.5",
+      "defaultValue": "2.0.0",
       "metadata": {
         "description": "Version of the used cube-api container."
       }
     },
     "dataToCubeVersion": {
       "type": "string",
-      "defaultValue": "1.0.1",
+      "defaultValue": "1.0.2",
       "metadata": {
         "description": "Version of the used data-to-cube container."
       }
@@ -193,7 +193,7 @@
           "properties": {
             "storageKeyType": "StorageAccessKey",
             "storageKey": "[parameters('bacPacStorageKey')]",
-            "storageUri": "https://swarmdatadiscovery.blob.core.windows.net/data-discovery-bacpacs/db-2021-3-2-10-21.bacpac",
+            "storageUri": "https://swarmdatadiscovery.blob.core.windows.net/data-discovery-bacpacs/bacpac-dd-2.0.0.bacpac",
             "administratorLogin": "[parameters('databaseServerAdminName')]",
             "administratorLoginPassword": "[parameters('databaseServerAdminPassword')]",
             "operationMode": "Import"
