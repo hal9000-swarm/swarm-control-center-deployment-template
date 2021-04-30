@@ -7,7 +7,7 @@
       "type": "string",
       "maxLength": 26,
       "metadata": {
-        "description": "A distinguishable name. For example the name of the organization. Has to match the first part of the enterprise application name. (<service-name>-swarm-control-center)"
+        "description": "A distinguishable name. For example the name of the organization. Has to match the first part of the enterprise application name. (<service-name>-control-center)"
       }
     },
     "location": {
@@ -120,15 +120,15 @@
     }
   },
   "variables": {
-    "db-server-name": "[if(equals(parameters('databaseServer'), 'createNew'), concat(parameters('service-name'),'-swarm-data-discovery-db-server'), parameters('databaseServer'))]",
-    "elastic-pool-name": "[if(equals(parameters('databaseServer'), 'createNew'), concat(parameters('service-name'),'-swarm-data-discovery-elastic-pool'), parameters('databaseElaticPool'))]",
-    "db-name": "[concat(parameters('service-name'),'-swarm-data-discovery-db')]",
-    "iot-hub-name": "[concat(parameters('service-name'),'-swarm-iot-hub')]",
-    "iot-hub-dps-name": "[concat(parameters('service-name'),'-swarm-iot-hub-dps')]",
-    "function-name": "[concat(parameters('service-name'),'-swarm-data-discovery-data-to-cube')]",
-    "service-plan-name": "[if(equals(parameters('appServicePlanName'), 'createNew'),concat(parameters('service-name'),'-swarm-data-discovery-plan'), parameters('appServicePlanName'))]",
-    "api-name": "[concat( parameters('service-name'), '-swarm-data-discovery-api')]",
-    "scc-name": "[concat( parameters('service-name'), '-swarm-control-center')]",
+    "db-server-name": "[if(equals(parameters('databaseServer'), 'createNew'), concat(parameters('service-name'),'-data-discovery-db-server'), parameters('databaseServer'))]",
+    "elastic-pool-name": "[if(equals(parameters('databaseServer'), 'createNew'), concat(parameters('service-name'),'-data-discovery-elastic-pool'), parameters('databaseElaticPool'))]",
+    "db-name": "[concat(parameters('service-name'),'-data-discovery-db')]",
+    "iot-hub-name": "[concat(parameters('service-name'),'-iot-hub')]",
+    "iot-hub-dps-name": "[concat(parameters('service-name'),'-iot-hub-dps')]",
+    "function-name": "[concat(parameters('service-name'),'-data-discovery-data-to-cube')]",
+    "service-plan-name": "[if(equals(parameters('appServicePlanName'), 'createNew'),concat(parameters('service-name'),'-data-discovery-plan'), parameters('appServicePlanName'))]",
+    "api-name": "[concat( parameters('service-name'), '-data-discovery-api')]",
+    "scc-name": "[concat( parameters('service-name'), '-control-center')]",
     "scc-gateway-name": "[concat( parameters('service-name'), '-scc-gateway')]"
   },
   "resources": [
