@@ -100,14 +100,14 @@
     },
     "sccFrontendVersion": {
       "type": "string",
-      "defaultValue": "3.7.1",
+      "defaultValue": "4.0.2",
       "metadata": {
         "description": "Version of the used scc-frontend container."
       }
     },
     "sccGatewayVersion": {
       "type": "string",
-      "defaultValue": "3.3.1",
+      "defaultValue": "4.0.0",
       "metadata": {
         "description": "Version of the used scc-frontend container."
       }
