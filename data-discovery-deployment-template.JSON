@@ -40,7 +40,6 @@
     },
     "databaseServerAdminName": {
       "type": "string",
-      "defaultValue": "datadiscoveryadmin",
       "metadata": {
         "description": "The administrator username for the db-server (choose one if you have selected to not use an existing database server)."
       }
