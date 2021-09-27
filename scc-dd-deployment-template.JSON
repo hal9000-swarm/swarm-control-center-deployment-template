@@ -63,7 +63,7 @@
         "description": "The consumer group you want to use for data-discovery. Probably has to be created"
       }
     },
-    "creatNewStorageAccount": {
+    "creatNewFunctionStorageAccount": {
       "type": "bool",
       "defaultValue": true,
       "metadata": {
@@ -75,6 +75,13 @@
       "maxLength": 24,
       "metadata": {
         "description": "The name of the Storage account you want to use. Specify a name if you have choosen not to use an existing account. The name can only contain lowercase letters and numbers!"
+      }
+    },
+    "anprStorageAccountName": {
+      "type": "string",
+      "maxLength": 24,
+      "metadata": {
+        "description": "The name of the Storage account you want to use for licenseplate-pictures. The name can only contain lowercase letters and numbers!"
       }
     },
     "sccAppId": {
@@ -292,7 +299,7 @@
       }
     },
     {
-      "condition": "[parameters('creatNewStorageAccount')]",
+      "condition": "[parameters('creatNewFunctionStorageAccount')]",
       "name": "[parameters('functionsStorageAccountName')]",
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2019-06-01",
@@ -300,6 +307,90 @@
       "kind": "StorageV2",
       "sku": {
         "name": "Standard_LRS"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2021-04-01",
+      "name": "[parameters('anprStorageAccountName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "virtualNetworkRules": [],
+          "ipRules": [],
+          "defaultAction": "Allow"
+        },
+        "supportsHttpsTrafficOnly": true,
+        "encryption": {
+          "services": {
+            "file": {
+              "keyType": "Account",
+              "enabled": true
+            },
+            "blob": {
+              "keyType": "Account",
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        },
+        "accessTier": "Hot"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2021-04-01",
+      "name": "[concat(parameters('anprStorageAccountName'), '/default')]",
+      "dependsOn": [
+        "[resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts', parameters('anprStorageAccountName'))]"
+      ],
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "properties": {
+        "cors": {
+          "corsRules": [
+            {
+              "allowedOrigins": [
+                "*"
+              ],
+              "allowedMethods": [
+                "GET"
+              ],
+              "maxAgeInSeconds": 0,
+              "exposedHeaders": [
+                ""
+              ],
+              "allowedHeaders": [
+                ""
+              ]
+            }
+          ]
+        },
+        "deleteRetentionPolicy": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2021-04-01",
+      "name": "[concat(parameters('anprStorageAccountName'), '/default/iothubcontainer')]",
+      "dependsOn": [
+        "[resourceId('resourceGroup().name, Microsoft.Storage/storageAccounts/blobServices', parameters('anprStorageAccountName'), 'default')]",
+        "[resourceId('resourceGroup().name, Microsoft.Storage/storageAccounts', parameters('anprStorageAccountName'))]"
+      ],
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "publicAccess": "None"
       }
     },
     {
@@ -311,7 +402,9 @@
       "dependsOn": [
         "[resourceId(resourceGroup().name, 'Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]",
         "[resourceId(resourceGroup().name, 'Microsoft.Web/serverfarms', variables('service-plan-name'))]",
-        "[resourceId(resourceGroup().name, 'Microsoft.Devices/IotHubs', variables('iot-hub-name'))]"
+        "[resourceId(resourceGroup().name, 'Microsoft.Devices/IotHubs', variables('iot-hub-name'))]",
+        "[resourceId('resourceGroup().name, Microsoft.Storage/storageAccounts', parameters('anprStorageAccountName'))]",
+        "[resourceId('resourceGroup().name, Microsoft.Storage/storageAccounts', parameters('functionStorageAccountName'))]"
       ],
       "properties": {
         "siteConfig": {
@@ -360,6 +453,14 @@
             {
               "name": "FUNCTIONS_WORKER_RUNTIME",
               "value": "java"
+            },
+            {
+              "name": "StorageConnectionString",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('anprStorageAccountName'), ';AccountKey=', listKeys(resourceId(resourceGroup().name , 'Microsoft.Storage/storageAccounts', parameters('anprStorageAccountName')), '2019-06-01').keys[0].value, ';EndpointSuffix=core.windows.net')]"
+            },
+            {
+              "name": "StorageContainerName",
+              "value": "iothubcontainer"
             }
           ],
           "linuxFxVersion": "[concat('DOCKER|swarm.azurecr.io/data-to-cube:', parameters('dataToCubeVersion'))]",
@@ -562,6 +663,14 @@
             {
               "name": "IOT_HUB_CONNECTION_STRING",
               "value": "[concat('HostName=', reference(resourceId('Microsoft.Devices/IoTHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).hostName, ';SharedAccessKeyName=iothubowner;SharedAccessKey=', listKeys(resourceId('Microsoft.Devices/IotHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).value[0].primaryKey)]"
+            },
+            {
+              "name": "STORAGE_CONNECTION_STRING",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('anprStorageAccountName'), ';AccountKey=', listKeys(resourceId(resourceGroup().name , 'Microsoft.Storage/storageAccounts', parameters('anprStorageAccountName')), '2019-06-01').keys[0].value, ';EndpointSuffix=core.windows.net')]"
+            },
+            {
+              "name": "STORAGE_CONTAINER",
+              "value": "iothubcontainer"
             }
           ],
           "linuxFxVersion": "[concat('DOCKER|swarm.azurecr.io/swarm-control-center-api-gateway:', parameters('sccGatewayVersion'))]",
