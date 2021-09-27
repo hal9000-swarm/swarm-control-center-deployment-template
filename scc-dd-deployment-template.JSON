@@ -144,11 +144,24 @@
       "apiVersion": "2020-03-01",
       "type": "Microsoft.Devices/IotHubs",
       "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts', parameters('anprStorageAccountName'))]"
+      ],
       "sku": {
         "name": "S1",
+        "tier": "Standard",
         "capacity": 1
       },
       "properties": {
+        "enableFileUploadNotifications": true,
+        "storageEndpoints": {
+          "$default": {
+            "sasTtlAsIso8601": "PT1H",
+            "connectionString": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('anprStorageAccountName'), ';AccountKey=', listKeys(resourceId(resourceGroup().name , 'Microsoft.Storage/storageAccounts', parameters('anprStorageAccountName')), '2019-06-01').keys[0].value, ';EndpointSuffix=core.windows.net')]",
+            "containerName": "iothubcontainer",
+            "authenticationType": "keyBased"
+          }
+        },
         "publicNetworkAccess": "Enabled",
         "eventHubEndpoints": {
           "events": {
@@ -384,8 +397,8 @@
       "apiVersion": "2021-04-01",
       "name": "[concat(parameters('anprStorageAccountName'), '/default/iothubcontainer')]",
       "dependsOn": [
-        "[resourceId('resourceGroup().name, Microsoft.Storage/storageAccounts/blobServices', parameters('anprStorageAccountName'), 'default')]",
-        "[resourceId('resourceGroup().name, Microsoft.Storage/storageAccounts', parameters('anprStorageAccountName'))]"
+        "[resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts/blobServices', parameters('anprStorageAccountName'), 'default')]",
+        "[resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts', parameters('anprStorageAccountName'))]"
       ],
       "properties": {
         "defaultEncryptionScope": "$account-encryption-key",
@@ -403,8 +416,8 @@
         "[resourceId(resourceGroup().name, 'Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]",
         "[resourceId(resourceGroup().name, 'Microsoft.Web/serverfarms', variables('service-plan-name'))]",
         "[resourceId(resourceGroup().name, 'Microsoft.Devices/IotHubs', variables('iot-hub-name'))]",
-        "[resourceId('resourceGroup().name, Microsoft.Storage/storageAccounts', parameters('anprStorageAccountName'))]",
-        "[resourceId('resourceGroup().name, Microsoft.Storage/storageAccounts', parameters('functionStorageAccountName'))]"
+        "[resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts', parameters('anprStorageAccountName'))]",
+        "[resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts', parameters('functionsStorageAccountName'))]"
       ],
       "properties": {
         "siteConfig": {
@@ -624,7 +637,7 @@
       "kind": "app,linux,container",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[resourceId(resourceGroup().name ,'Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]",
+        "[resourceId(resourceGroup().name, 'Microsoft.Sql/servers/databases', variables('db-server-name'), variables('db-name'))]",
         "[resourceId(resourceGroup().name, 'Microsoft.Web/serverfarms', variables('service-plan-name'))]",
         "[resourceId(resourceGroup().name, 'Microsoft.Devices/IotHubs', variables('iot-hub-name'))]"
       ],
