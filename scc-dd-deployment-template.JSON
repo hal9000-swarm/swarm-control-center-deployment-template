@@ -118,10 +118,17 @@
         "description": "Version of the used scc-frontend container."
       }
     },
+    "dbSchemaVersion": {
+      "type": "string",
+      "defaultValue": "4.1.0",
+      "metadata": {
+        "description": "Version of the used database schema."
+      }
+    },
     "bacPacStorageKey": {
       "type": "securestring",
       "metadata": {
-        "description": "The key for the storage account where the bacpac file is"
+        "description": "The key for the storage account where the db-bacpac file is"
       }
     }
   },
@@ -135,7 +142,8 @@
     "service-plan-name": "[if(equals(parameters('appServicePlanName'), 'createNew'),concat(parameters('service-name'),'-data-discovery-plan'), parameters('appServicePlanName'))]",
     "api-name": "[concat( parameters('service-name'), '-data-discovery-api')]",
     "scc-name": "[concat( parameters('service-name'), '-control-center')]",
-    "scc-gateway-name": "[concat( parameters('service-name'), '-scc-gateway')]"
+    "scc-gateway-name": "[concat( parameters('service-name'), '-scc-gateway')]",
+    "bacpac-uri": "[concat('https://swarmdatadiscovery.blob.core.windows.net/data-discovery-bacpacs/bacpac-dd-', parameters('dbSchemaVersion') , '.bacpac')]"
   },
   "resources": [
 
