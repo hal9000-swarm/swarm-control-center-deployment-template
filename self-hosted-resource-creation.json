@@ -1,0 +1,655 @@
+{
+  "$schema":"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion":"1.0.0.0",
+  "parameters":{
+    "service-name":{
+      "type":"string",
+      "maxLength":26,
+      "metadata":{
+        "description":"A distinguishable name. For example the name of the organization. Has to match the first part of the enterprise application name. (<service-name>-control-center)"
+      }
+    },
+    "location":{
+      "type":"string",
+      "defaultValue":"northeurope",
+      "metadata":{
+        "description":"Location for the created resources."
+      }
+    },
+    "sccAppId":{
+      "type":"string",
+      "metadata":{
+        "description":"The App Id"
+      }
+    },
+    "sccTenantId": {
+      "type": "string",
+      "metadata": {
+        "description": "The tenant Id"
+      }
+    },
+    "sccGlobalVersion": {
+      "type": "string",
+      "metadata": {
+        "description": "The release version of the whole scc system (e.g. 2021.2)"
+      }
+    },
+    "cubeApiVersion":{
+      "type":"string",
+      "defaultValue":"4.2.2",
+      "metadata":{
+        "description":"Version of the used cube-api container."
+      }
+    },
+    "dataToCubeVersion":{
+      "type":"string",
+      "defaultValue":"3.0.4",
+      "metadata":{
+        "description":"Version of the used data-to-cube container."
+      }
+    },
+    "sccFrontendVersion":{
+      "type":"string",
+      "defaultValue":"5.3.0",
+      "metadata":{
+        "description":"Version of the used scc-frontend container."
+      }
+    },
+    "sccGatewayVersion":{
+      "type":"string",
+      "defaultValue":"5.2.1",
+      "metadata":{
+        "description":"Version of the used scc-gateway container."
+      }
+    },
+    "docker-password":{
+      "type":"securestring",
+      "metadata":{
+        "description":"The password to the swar container registry"
+      }
+    },
+    "postfix": {
+      "type" : "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Postfix for all names of created resources. For managed instances it should be the first 5 characters of the sha256 hash for the value <service-name>-swarm-fm"
+      }
+    },
+    "logAnalyticsClientId":{
+      "type": "string",
+      "metadata": {
+        "description": "clientId of log analytics enterprise application"
+      }
+    },
+    "logAnalyticsClientSecret":{
+      "type": "securestring",
+      "metadata": {
+        "description": "client secret of log analytics enterprise application"
+      }
+    },
+    "logAnalyticsWorkspaceId":{
+      "type": "string",
+      "metadata": {
+        "description": "WorkspaceId of log analytics"
+      }
+    },
+    "logAnalyticsTenantId": {
+      "type": "string",
+      "metadata": {
+        "description": "tenantId of log analytics enterprise application"
+      }
+    },
+    "sccFrontendName": {
+      "type": "string",
+      "defaultValue": "default",
+      "metadata": {
+        "description": "Choose weather the control center frontend webapp uses the hash-postfix. Change from default if no custom domain will be set and it is important how the .azurewebsites.net domain looks like"
+      }
+    },
+    "appServicePlanName":{
+      "type": "string",
+      "defaultValue": "createNew",
+      "metadata": {
+        "description": "If you already have a app service plan in this resource group you want to use enter its name here. If left on createNew a new one will be created"
+      }
+    },
+    "dbJdbcConnectionString" : {
+      "type": "string",
+      "metadata": {
+        "description": "The jdbc connection string of your database. Do not forget to insert the Password!"
+      }
+    }
+  },
+  "variables":{
+    "iot-hub-name":"[concat(parameters('service-name'),'-iot-hub-', parameters('postfix'))]",
+    "iot-hub-dps-name":"[concat(parameters('service-name'),'-iot-hub-dps-', parameters('postfix'))]",
+    "function-name":"[concat(parameters('service-name'),'-iothub-to-db-', parameters('postfix'))]",
+    "service-plan-name":"[if(equals(parameters('appServicePlanName'), 'createNew'),concat(parameters('service-name'),'-appservice-plan-', parameters('postfix')), parameters('appServicePlanName'))]",
+    "api-name":"[concat( parameters('service-name'), '-data-analytics-api-', parameters('postfix'))]",
+    "scc-name":"[if(equals(parameters('sccFrontendName'), 'default'), concat( parameters('service-name'), '-control-center-', parameters('postfix')), parameters('sccFrontendName'))]",
+    "scc-gateway-name":"[concat( parameters('service-name'), '-control-center-api-', parameters('postfix'))]",
+    "functionsStorageAccountName":"[concat('functions', parameters('postfix'))]",
+    "anprStorageAccountName":"[concat('iothub', parameters('postfix'))]",
+    "db-host-port": "string.getStringBetween(parameters('dbJdbcConnectionString'), 'jdbc:sqlserver://')"
+  },
+  "functions": [
+    {
+      "namespace": "string",
+      "members": {
+        "getStringBetween": {
+          "parameters": [
+            {
+              "name": "mainString",
+              "type": "string"
+            },
+            {
+              "name": "before",
+              "type": "string"
+            }
+          ],
+          "output": {
+            "type": "string",
+            "value": "[take(skip(parameters('mainString'), add(indexOf(parameters('mainString') ,parameters('before')),length(parameters('before')))), indexOf(skip(parameters('mainString'), add(indexOf(parameters('mainString') ,parameters('before')),length(parameters('before')))), ';'))]"
+          }
+        }
+      }
+    }
+  ],
+  "resources":[
+    {
+      "name":"[variables('functionsStorageAccountName')]",
+      "type":"Microsoft.Storage/storageAccounts",
+      "apiVersion":"2019-06-01",
+      "location":"[parameters('location')]",
+      "kind":"StorageV2",
+      "sku":{
+        "name":"Standard_LRS"
+      }
+    },
+    {
+      "type":"Microsoft.Storage/storageAccounts",
+      "apiVersion":"2021-04-01",
+      "name":"[variables('anprStorageAccountName')]",
+      "location":"[parameters('location')]",
+      "sku":{
+        "name":"Standard_LRS",
+        "tier":"Standard"
+      },
+      "kind":"StorageV2",
+      "properties":{
+        "networkAcls":{
+          "bypass":"AzureServices",
+          "virtualNetworkRules":[
+
+          ],
+          "ipRules":[
+
+          ],
+          "defaultAction":"Allow"
+        },
+        "supportsHttpsTrafficOnly":true,
+        "encryption":{
+          "services":{
+            "file":{
+              "keyType":"Account",
+              "enabled":true
+            },
+            "blob":{
+              "keyType":"Account",
+              "enabled":true
+            }
+          },
+          "keySource":"Microsoft.Storage"
+        },
+        "accessTier":"Hot"
+      }
+    },
+    {
+      "type":"Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion":"2021-04-01",
+      "name":"[concat(variables('anprStorageAccountName'), '/default')]",
+      "dependsOn":[
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('anprStorageAccountName'))]"
+      ],
+      "sku":{
+        "name":"Standard_LRS",
+        "tier":"Standard"
+      },
+      "properties":{
+        "cors":{
+          "corsRules":[
+            {
+              "allowedOrigins":[
+                "*"
+              ],
+              "allowedMethods":[
+                "GET"
+              ],
+              "maxAgeInSeconds":0,
+              "exposedHeaders":[
+                ""
+              ],
+              "allowedHeaders":[
+                ""
+              ]
+            }
+          ]
+        },
+        "deleteRetentionPolicy":{
+          "enabled":false
+        }
+      }
+    },
+    {
+      "type":"Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion":"2021-04-01",
+      "name":"[concat(variables('anprStorageAccountName'), '/default/iothubcontainer')]",
+      "dependsOn":[
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('anprStorageAccountName'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('anprStorageAccountName'))]"
+      ],
+      "properties":{
+        "defaultEncryptionScope":"$account-encryption-key",
+        "denyEncryptionScopeOverride":false,
+        "publicAccess":"None"
+      }
+    },
+    {
+      "name":"[variables('iot-hub-name')]",
+      "apiVersion":"2020-03-01",
+      "type":"Microsoft.Devices/IotHubs",
+      "location":"[parameters('location')]",
+      "dependsOn":[
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('anprStorageAccountName'))]"
+      ],
+      "sku":{
+        "name":"S1",
+        "tier":"Standard",
+        "capacity":2
+      },
+      "properties":{
+        "enableFileUploadNotifications":true,
+        "storageEndpoints":{
+          "$default":{
+            "sasTtlAsIso8601":"PT1H",
+            "connectionString":"[concat('DefaultEndpointsProtocol=https;AccountName=', variables('anprStorageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('anprStorageAccountName')), '2019-06-01').keys[0].value, ';EndpointSuffix=core.windows.net')]",
+            "containerName":"iothubcontainer",
+            "authenticationType":"keyBased"
+          }
+        },
+        "publicNetworkAccess":"Enabled",
+        "eventHubEndpoints":{
+          "events":{
+            "retentionTimeInDays":1,
+            "partitionCount":4
+          }
+        },
+        "cloudToDevice":{
+          "defaultTtlAsIso8601":"PT1H",
+          "maxDeliveryCount":10,
+          "feedback":{
+            "ttlAsIso8601":"PT1H",
+            "lockDurationAsIso8601":"PT60S",
+            "maxDeliveryCount":10
+          }
+        },
+        "messagingEndpoints":{
+          "fileNotifications":{
+            "ttlAsIso8601":"PT1H",
+            "lockDurationAsIso8601":"PT1M",
+            "maxDeliveryCount":10
+          }
+        }
+      }
+    },
+    {
+      "name":"[concat(variables('iot-hub-name'), '/events/datadiscovery')]",
+      "type":"Microsoft.Devices/IotHubs/eventHubEndpoints/ConsumerGroups",
+      "apiVersion":"2020-03-01",
+      "dependsOn":[
+        "[resourceId('Microsoft.Devices/IotHubs', variables('iot-hub-name'))]"
+      ]
+    },
+    {
+      "name":"[variables('iot-hub-dps-name')]",
+      "type":"Microsoft.Devices/provisioningServices",
+      "apiVersion":"2018-01-22",
+      "location":"[parameters('location')]",
+      "sku":{
+        "name":"S1",
+        "capacity":1
+      },
+      "properties":{
+        "state":"Active",
+        "provisioningState":"Succeeded",
+        "iotHubs":[
+          {
+            "connectionString":"[concat('HostName=', reference(resourceId('Microsoft.Devices/IoTHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).hostName, ';SharedAccessKeyName=iothubowner;SharedAccessKey=', listKeys(resourceId('Microsoft.Devices/IotHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).value[0].primaryKey)]",
+            "location":"[parameters('location')]"
+          }
+        ],
+        "allocationPolicy":"Hashed"
+      }
+    },
+    {
+      "condition": "[equals(parameters('appServicePlanName'), 'createNew')]",
+      "name":"[variables('service-plan-name')]",
+      "type":"Microsoft.Web/serverfarms",
+      "apiVersion":"2018-02-01",
+      "location":"[parameters('location')]",
+      "kind":"linux",
+      "properties":{
+        "reserved":true
+      },
+      "sku":{
+        "tier":"Basic",
+        "name":"B2"
+      }
+    },
+    {
+      "apiVersion":"2018-11-01",
+      "name":"[variables('function-name')]",
+      "type":"Microsoft.Web/sites",
+      "kind":"functionapp,linux,container",
+      "location":"[parameters('location')]",
+      "dependsOn":[
+        "[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]",
+        "[resourceId('Microsoft.Devices/IotHubs', variables('iot-hub-name'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('anprStorageAccountName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('functionsStorageAccountName'))]"
+      ],
+      "properties":{
+        "siteConfig":{
+          "alwaysOn":true,
+          "appSettings":[
+            {
+              "name":"DOCKER_REGISTRY_SERVER_URL",
+              "value":"https://swarm.azurecr.io"
+            },
+            {
+              "name":"DOCKER_REGISTRY_SERVER_USERNAME",
+              "value":"swarm"
+            },
+            {
+              "name":"DOCKER_ENABLE_CI",
+              "value":"true"
+            },
+            {
+              "name":"DOCKER_REGISTRY_SERVER_PASSWORD",
+              "value":"[parameters('docker-password')]"
+            },
+            {
+              "name":"EventHubConnectionString",
+              "value":"[concat('Endpoint=', reference(resourceId('Microsoft.Devices/IoTHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).eventHubEndpoints.events.endpoint, ';SharedAccessKeyName=iothubowner;SharedAccessKey=', listKeys(resourceId('Microsoft.Devices/IotHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).value[0].primaryKey, ';EntityPath=', reference(resourceId('Microsoft.Devices/IoTHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).eventHubEndpoints.events.path)]"
+            },
+            {
+              "name":"DBConnectionString",
+              "value":"[parameters('dbJdbcConnectionString')]"
+            },
+            {
+              "name":"ConfigurationConsumerGroup",
+              "value":"datadiscovery"
+            },
+            {
+              "name":"WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+              "value":"false"
+            },
+            {
+              "name":"FUNCTIONS_EXTENSION_VERSION",
+              "value":"~3"
+            },
+            {
+              "name":"AzureWebJobsStorage",
+              "value":"[concat('DefaultEndpointsProtocol=https;AccountName=', variables('functionsStorageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('functionsStorageAccountName')), '2019-06-01').keys[0].value, ';EndpointSuffix=core.windows.net')]"
+            },
+            {
+              "name":"FUNCTIONS_WORKER_RUNTIME",
+              "value":"java"
+            },
+            {
+              "name":"StorageConnectionString",
+              "value":"[concat('DefaultEndpointsProtocol=https;AccountName=', variables('anprStorageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('anprStorageAccountName')), '2019-06-01').keys[0].value, ';EndpointSuffix=core.windows.net')]"
+            },
+            {
+              "name":"StorageContainerName",
+              "value":"iothubcontainer"
+            }
+          ],
+          "linuxFxVersion":"[concat('DOCKER|swarm.azurecr.io/data-to-cube:', parameters('dataToCubeVersion'))]",
+          "httpLoggingEnabled":true,
+          "logsDirectorySizeLimit":35
+        },
+        "serverFarmId":"[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+      }
+    },
+    {
+      "name":"[variables('api-name')]",
+      "type":"Microsoft.Web/sites",
+      "apiVersion":"2018-11-01",
+      "kind":"app,linux,container",
+      "location":"[parameters('location')]",
+      "dependsOn":[
+        "[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+      ],
+      "properties":{
+        "siteConfig":{
+          "alwaysOn":true,
+          "appSettings":[
+            {
+              "name":"DOCKER_REGISTRY_SERVER_URL",
+              "value":"https://swarm.azurecr.io"
+            },
+            {
+              "name":"DOCKER_REGISTRY_SERVER_USERNAME",
+              "value":"swarm"
+            },
+            {
+              "name":"DOCKER_ENABLE_CI",
+              "value":"true"
+            },
+            {
+              "name":"DOCKER_REGISTRY_SERVER_PASSWORD",
+              "value":"[parameters('docker-password')]"
+            },
+            {
+              "name":"CUBEJS_DB_HOST",
+              "value": "[take(variables('db-host-port'), indexOf(variables('db-host-port'), ':'))]"
+            },
+            {
+              "name":"CUBEJS_DB_NAME",
+              "value":"[string.getStringBetween(parameters('dbJdbcConnectionString'), 'database=')]"
+            },
+            {
+              "name":"CUBEJS_DB_PORT",
+              "value":"[skip(variables('db-host-port'), add(indexOf(variables('db-host-port'), ':'), 1))]"
+            },
+            {
+              "name":"CUBEJS_DB_USER",
+              "value":"[string.getStringBetween(parameters('dbJdbcConnectionString'), 'user=')]"
+            },
+            {
+              "name":"CUBEJS_DB_PASS",
+              "value":"[string.getStringBetween(parameters('dbJdbcConnectionString'), 'password=')]"
+            },
+            {
+              "name":"CUBEJS_DB_SSL",
+              "value":"[string.getStringBetween(parameters('dbJdbcConnectionString'), 'encrypt=')]"
+            },
+            {
+              "name":"CUBEJS_DB_TYPE",
+              "value":"mssql"
+            },
+            {
+              "name":"CUBEJS_CACHE_AND_QUEUE_DRIVER",
+              "value":"memory"
+            },
+            {
+              "name":"CUBEJS_AD_APP_ID",
+              "value":"[parameters('sccAppId')]"
+            },
+            {
+              "name":"CUBEJS_AD_APP_TENANT",
+              "value":"[parameters('sccTenantId')]"
+            },
+            {
+              "name":"CUBEJS_API_SECRET",
+              "value":"2ea6ecefda06e8cae189c5722069672c9ddc1da467696d4aefe1391b09e7733478f709b79bd8a398a011c0566b06b78c3470a5a150090d2899b2d2bad4e6b7e9"
+            }
+          ],
+          "linuxFxVersion":"[concat('DOCKER|swarm.azurecr.io/swarm-cube-api:', parameters('cubeApiVersion'))]",
+          "httpLoggingEnabled":true,
+          "logsDirectorySizeLimit":35
+        },
+        "serverFarmId":"[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+      }
+    },
+    {
+      "name":"[variables('scc-name')]",
+      "type":"Microsoft.Web/sites",
+      "apiVersion":"2018-11-01",
+      "kind":"app,linux,container",
+      "location":"[parameters('location')]",
+      "dependsOn":[
+        "[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]",
+        "[resourceId('Microsoft.Devices/IotHubs', variables('iot-hub-name'))]"
+      ],
+      "properties":{
+        "siteConfig":{
+          "alwaysOn":true,
+          "appSettings":[
+            {
+              "name":"DOCKER_REGISTRY_SERVER_URL",
+              "value":"https://swarm.azurecr.io"
+            },
+            {
+              "name":"DOCKER_REGISTRY_SERVER_USERNAME",
+              "value":"swarm"
+            },
+            {
+              "name":"DOCKER_ENABLE_CI",
+              "value":"true"
+            },
+            {
+              "name":"DOCKER_REGISTRY_SERVER_PASSWORD",
+              "value":"[parameters('docker-password')]"
+            },
+            {
+              "name":"WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+              "value":"false"
+            },
+            {
+              "name":"WEBSITES_HTTPLOGGING_RETENTION_DAYS",
+              "value":"5"
+            },
+            {
+              "name":"REACT_APP_AAD_APP_CLIENT_ID",
+              "value":"[parameters('sccAppId')]"
+            },
+            {
+              "name":"REACT_APP_API_URL",
+              "value":"[concat('https://', variables('scc-gateway-name'), '.azurewebsites.net/v3/')]"
+            },
+            {
+              "name": "REACT_APP_AUTHORITY",
+              "value": "[concat('https://login.microsoftonline.com/', parameters('sccTenantId'))]"
+            },
+            {
+              "name":"DATA_API_URL",
+              "value":"[concat('https://', variables('api-name'), '.azurewebsites.net')]"
+            },
+            {
+              "name": "GLOBAL_VERSION_INFO",
+              "value": "[parameters('sccGlobalVersion')]"
+            }
+          ],
+          "linuxFxVersion":"[concat('DOCKER|swarm.azurecr.io/swarmccfrontend:', parameters('sccFrontendVersion'))]",
+          "httpLoggingEnabled":true,
+          "logsDirectorySizeLimit":35
+        },
+        "serverFarmId":"[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+      }
+    },
+    {
+      "name":"[variables('scc-gateway-name')]",
+      "type":"Microsoft.Web/sites",
+      "apiVersion":"2018-11-01",
+      "kind":"app,linux,container",
+      "location":"[parameters('location')]",
+      "dependsOn":[
+        "[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]",
+        "[resourceId('Microsoft.Devices/IotHubs', variables('iot-hub-name'))]"
+      ],
+      "properties":{
+        "siteConfig":{
+          "alwaysOn":true,
+          "appSettings":[
+            {
+              "name":"DOCKER_REGISTRY_SERVER_URL",
+              "value":"https://swarm.azurecr.io"
+            },
+            {
+              "name":"DOCKER_REGISTRY_SERVER_USERNAME",
+              "value":"swarm"
+            },
+            {
+              "name":"DOCKER_ENABLE_CI",
+              "value":"true"
+            },
+            {
+              "name":"DOCKER_REGISTRY_SERVER_PASSWORD",
+              "value":"[parameters('docker-password')]"
+            },
+            {
+              "name":"ADD_APP_CLIENT_ID",
+              "value":"[parameters('sccAppId')]"
+            },
+            {
+              "name":"ADD_TENANT_ID",
+              "value":"[parameters('sccTenantId')]"
+            },
+            {
+              "name":"DB_CONNECTION",
+              "value": "[parameters('dbJdbcConnectionString')]"
+            },
+            {
+              "name":"IOT_HUB_CONNECTION_STRING",
+              "value":"[concat('HostName=', reference(resourceId('Microsoft.Devices/IoTHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).hostName, ';SharedAccessKeyName=iothubowner;SharedAccessKey=', listKeys(resourceId('Microsoft.Devices/IotHubs', variables('iot-hub-name')), providers('Microsoft.Devices', 'IoTHubs').apiVersions[0]).value[0].primaryKey)]"
+            },
+            {
+              "name":"STORAGE_CONNECTION_STRING",
+              "value":"[concat('DefaultEndpointsProtocol=https;AccountName=', variables('anprStorageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('anprStorageAccountName')), '2019-06-01').keys[0].value, ';EndpointSuffix=core.windows.net')]"
+            },
+            {
+              "name":"STORAGE_CONTAINER",
+              "value":"iothubcontainer"
+            },
+            {
+              "name": "LOG_ANALYTICS_CLIENT_ID",
+              "value": "[parameters('logAnalyticsClientId')]"
+            },
+            {
+              "name": "LOG_ANALYTICS_SECRET",
+              "value": "[parameters('logAnalyticsClientSecret')]"
+            },
+            {
+              "name": "LOG_ANALYTICS_WORKSPACE_ID",
+              "value": "[parameters('logAnalyticsWorkspaceId')]"
+            },
+            {
+              "name": "LOG_ANALYTICS_TENANT_ID",
+              "value": "[parameters('logAnalyticsTenantId')]"
+            },
+            {
+              "name": "IOTHUB_RESOURCE_ID",
+              "value": "[toLower(resourceId('Microsoft.Devices/IotHubs', variables('iot-hub-name')))]"
+            }
+          ],
+          "linuxFxVersion":"[concat('DOCKER|swarm.azurecr.io/swarm-control-center-api-gateway:', parameters('sccGatewayVersion'))]",
+          "httpLoggingEnabled":true,
+          "logsDirectorySizeLimit":35
+        },
+        "serverFarmId":"[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+      }
+    }
+  ]
+}
