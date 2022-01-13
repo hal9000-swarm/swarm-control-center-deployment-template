@@ -30,34 +30,35 @@
     },
     "sccGlobalVersion": {
       "type": "string",
+      "defaultValue":"2021.2.U2",
       "metadata": {
         "description": "The release version of the whole scc system (e.g. 2021.2)"
       }
     },
     "cubeApiVersion":{
       "type":"string",
-      "defaultValue":"4.2.2",
+      "defaultValue":"4.2.6",
       "metadata":{
         "description":"Version of the used cube-api container."
       }
     },
     "dataToCubeVersion":{
       "type":"string",
-      "defaultValue":"3.0.4",
+      "defaultValue":"3.1.2",
       "metadata":{
         "description":"Version of the used data-to-cube container."
       }
     },
     "sccFrontendVersion":{
       "type":"string",
-      "defaultValue":"5.3.0",
+      "defaultValue":"5.4.6",
       "metadata":{
         "description":"Version of the used scc-frontend container."
       }
     },
     "sccGatewayVersion":{
       "type":"string",
-      "defaultValue":"5.2.1",
+      "defaultValue":"5.3.6",
       "metadata":{
         "description":"Version of the used scc-gateway container."
       }
@@ -99,13 +100,6 @@
         "description": "tenantId of log analytics enterprise application"
       }
     },
-    "sccFrontendName": {
-      "type": "string",
-      "defaultValue": "default",
-      "metadata": {
-        "description": "Choose weather the control center frontend webapp uses the hash-postfix. Change from default if no custom domain will be set and it is important how the .azurewebsites.net domain looks like"
-      }
-    },
     "appServicePlanName":{
       "type": "string",
       "defaultValue": "createNew",
@@ -121,13 +115,13 @@
     }
   },
   "variables":{
-    "iot-hub-name":"[concat(parameters('service-name'),'-iot-hub-', parameters('postfix'))]",
-    "iot-hub-dps-name":"[concat(parameters('service-name'),'-iot-hub-dps-', parameters('postfix'))]",
-    "function-name":"[concat(parameters('service-name'),'-iothub-to-db-', parameters('postfix'))]",
-    "service-plan-name":"[if(equals(parameters('appServicePlanName'), 'createNew'),concat(parameters('service-name'),'-appservice-plan-', parameters('postfix')), parameters('appServicePlanName'))]",
-    "api-name":"[concat( parameters('service-name'), '-data-analytics-api-', parameters('postfix'))]",
-    "scc-name":"[if(equals(parameters('sccFrontendName'), 'default'), concat( parameters('service-name'), '-control-center-', parameters('postfix')), parameters('sccFrontendName'))]",
-    "scc-gateway-name":"[concat( parameters('service-name'), '-control-center-api-', parameters('postfix'))]",
+    "iot-hub-name":"[concat(parameters('service-name'),'-iot-hub')]",
+    "iot-hub-dps-name":"[concat(parameters('service-name'),'-iot-hub-dps')]",
+    "function-name":"[concat(parameters('service-name'),'-iothub-to-db')]",
+    "service-plan-name":"[if(equals(parameters('appServicePlanName'), 'createNew'), concat(parameters('service-name'),'-appservice-plan'), parameters('appServicePlanName'))]",
+    "api-name":"[concat( parameters('service-name'), '-data-analytics-api')]",
+    "scc-name":"[concat( parameters('service-name'), '-control-center')]",
+    "scc-gateway-name":"[concat( parameters('service-name'), '-control-center-api')]",
     "functionsStorageAccountName":"[concat('functions', parameters('postfix'))]",
     "anprStorageAccountName":"[concat('iothub', parameters('postfix'))]",
     "db-host-port": "string.getStringBetween(parameters('dbJdbcConnectionString'), 'jdbc:sqlserver://')"
