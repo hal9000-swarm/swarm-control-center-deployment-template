@@ -66,7 +66,13 @@
     "docker-password":{
       "type":"securestring",
       "metadata":{
-        "description":"The password to the swar container registry"
+        "description":"The password to the swarm container registry"
+      }
+    },
+    "docker-user":{
+      "type":"string",
+      "metadata":{
+        "description":"The password to the swarm container registry"
       }
     },
     "postfix": {
@@ -362,7 +368,7 @@
             },
             {
               "name":"DOCKER_REGISTRY_SERVER_USERNAME",
-              "value":"swarm"
+              "value":"[parameters('docker-user')]"
             },
             {
               "name":"DOCKER_ENABLE_CI",
@@ -435,7 +441,7 @@
             },
             {
               "name":"DOCKER_REGISTRY_SERVER_USERNAME",
-              "value":"swarm"
+              "value":"[parameters('docker-user')]"
             },
             {
               "name":"DOCKER_ENABLE_CI",
@@ -517,7 +523,7 @@
             },
             {
               "name":"DOCKER_REGISTRY_SERVER_USERNAME",
-              "value":"swarm"
+              "value":"[parameters('docker-user')]"
             },
             {
               "name":"DOCKER_ENABLE_CI",
@@ -583,7 +589,7 @@
             },
             {
               "name":"DOCKER_REGISTRY_SERVER_USERNAME",
-              "value":"swarm"
+              "value":"[parameters('docker-user')]"
             },
             {
               "name":"DOCKER_ENABLE_CI",
