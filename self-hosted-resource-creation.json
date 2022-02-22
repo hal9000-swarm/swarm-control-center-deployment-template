@@ -434,6 +434,27 @@
       "properties":{
         "siteConfig":{
           "alwaysOn":true,
+          "autoHealEnabled": true,
+          "autoHealRules": {
+              "actions": {
+                "actionType": "Recycle",
+                "minProcessExecutionTime": "00:10:00"
+              },
+              "triggers": {
+                "privateBytesInKb": 0,
+                "slowRequestsWithPath": [],
+                "statusCodes": [],
+                "statusCodesRange": [
+                  {
+                    "count": 30,
+                    "path": "",
+                    "statusCodes": "500-530",
+                    "timeInterval": "00:02:00"
+                  }
+                ]
+              }
+          },
+          "healthCheckPath": "/livez",
           "appSettings":[
             {
               "name":"DOCKER_REGISTRY_SERVER_URL",
@@ -582,6 +603,27 @@
       "properties":{
         "siteConfig":{
           "alwaysOn":true,
+          "autoHealEnabled": true,
+          "autoHealRules": {
+              "actions": {
+                "actionType": "Recycle",
+                "minProcessExecutionTime": "00:10:00"
+              },
+              "triggers": {
+                "privateBytesInKb": 0,
+                "slowRequestsWithPath": [],
+                "statusCodes": [],
+                "statusCodesRange": [
+                  {
+                    "count": 30,
+                    "path": "",
+                    "statusCodes": "500-530",
+                    "timeInterval": "00:02:00"
+                  }
+                ]
+              }
+          },
+          "healthCheckPath": "/v3/healthz",
           "appSettings":[
             {
               "name":"DOCKER_REGISTRY_SERVER_URL",
