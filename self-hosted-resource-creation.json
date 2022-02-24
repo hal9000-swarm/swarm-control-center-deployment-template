@@ -446,7 +446,7 @@
                 "statusCodes": [],
                 "statusCodesRange": [
                   {
-                    "count": 30,
+                    "count": 10,
                     "path": "",
                     "statusCodes": "500-530",
                     "timeInterval": "00:02:00"
@@ -615,7 +615,7 @@
                 "statusCodes": [],
                 "statusCodesRange": [
                   {
-                    "count": 30,
+                    "count": 10,
                     "path": "",
                     "statusCodes": "500-530",
                     "timeInterval": "00:02:00"
