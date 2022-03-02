@@ -30,35 +30,34 @@
     },
     "sccGlobalVersion": {
       "type": "string",
-      "defaultValue":"2021.2.U2",
+      "defaultValue":"2022.1",
       "metadata": {
         "description": "The release version of the whole scc system (e.g. 2021.2)"
       }
     },
-    "cubeApiVersion":{
+    "cubeApiDeployment":{
       "type":"string",
-      "defaultValue":"4.2.6",
       "metadata":{
-        "description":"Version of the used cube-api container."
+        "description":"Encoded cube-api compose file"
       }
     },
     "dataToCubeVersion":{
       "type":"string",
-      "defaultValue":"3.1.2",
+      "defaultValue":"3.3.2",
       "metadata":{
         "description":"Version of the used data-to-cube container."
       }
     },
     "sccFrontendVersion":{
       "type":"string",
-      "defaultValue":"5.4.6",
+      "defaultValue":"5.7.2",
       "metadata":{
         "description":"Version of the used scc-frontend container."
       }
     },
     "sccGatewayVersion":{
       "type":"string",
-      "defaultValue":"5.3.6",
+      "defaultValue":"5.5.2",
       "metadata":{
         "description":"Version of the used scc-gateway container."
       }
@@ -501,10 +500,6 @@
               "value":"mssql"
             },
             {
-              "name":"CUBEJS_CACHE_AND_QUEUE_DRIVER",
-              "value":"memory"
-            },
-            {
               "name":"CUBEJS_AD_APP_ID",
               "value":"[parameters('sccAppId')]"
             },
@@ -517,7 +512,7 @@
               "value":"2ea6ecefda06e8cae189c5722069672c9ddc1da467696d4aefe1391b09e7733478f709b79bd8a398a011c0566b06b78c3470a5a150090d2899b2d2bad4e6b7e9"
             }
           ],
-          "linuxFxVersion":"[concat('DOCKER|swarm.azurecr.io/swarm-cube-api:', parameters('cubeApiVersion'))]",
+          "linuxFxVersion":"[concat('COMPOSE|', parameters('cubeApiDeployment'))]",
           "httpLoggingEnabled":true,
           "logsDirectorySizeLimit":35
         },
