@@ -530,6 +530,7 @@
         "[resourceId('Microsoft.Devices/IotHubs', variables('iot-hub-name'))]"
       ],
       "properties":{
+        "httpsOnly": true,
         "siteConfig":{
           "alwaysOn":true,
           "appSettings":[
