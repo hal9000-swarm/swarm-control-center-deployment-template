@@ -30,7 +30,7 @@
     },
     "sccGlobalVersion": {
       "type": "string",
-      "defaultValue":"2022.2",
+      "defaultValue":"2022.2.U1",
       "metadata": {
         "description": "The release version of the whole scc system (e.g. 2021.2)"
       }
@@ -50,14 +50,14 @@
     },
     "sccFrontendVersion":{
       "type":"string",
-      "defaultValue":"6.1.3",
+      "defaultValue":"6.4.1",
       "metadata":{
         "description":"Version of the used scc-frontend container."
       }
     },
     "sccGatewayVersion":{
       "type":"string",
-      "defaultValue":"6.0.4",
+      "defaultValue":"6.3.0",
       "metadata":{
         "description":"Version of the used scc-gateway container."
       }
