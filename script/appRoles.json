@@ -1,20 +1,38 @@
 [
-		{ 
-    		"allowedMemberTypes": [
-				"User"
-			],
-			"description": "Superadmins can manage everything.",
-			"displayName": "Superadmin",
-			"isEnabled": true,
-			"value": "superadmin"
-		},
-		{
-			"allowedMemberTypes": [
-				"User"
-			],
-			"description": "Operators can maintain boxes.",
-			"displayName": "Operator",	
-			"isEnabled": true,
-			"value": "operator"
-		}
+  {
+    "allowedMemberTypes": [
+      "User"
+    ],
+    "description": "Admin",
+    "displayName": "Admin",
+    "isEnabled": true,
+    "value": "Admin"
+  },
+  {
+    "allowedMemberTypes": [
+      "User"
+    ],
+    "description": "User",
+    "displayName": "User",
+    "isEnabled": true,
+    "value": "User"
+  },
+  {
+    "allowedMemberTypes": [
+      "User"
+    ],
+    "description": "Viewer",
+    "displayName": "Viewer",
+    "isEnabled": true,
+    "value": "Viewer"
+  },
+  {
+    "allowedMemberTypes": [
+      "User"
+    ],
+    "description": "Super Admin",
+    "displayName": "Super Admin",
+    "isEnabled": true,
+    "value": "Superadmin"
+  }
 ]
