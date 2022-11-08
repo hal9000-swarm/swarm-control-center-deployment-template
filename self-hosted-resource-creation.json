@@ -30,7 +30,7 @@
     },
     "sccGlobalVersion": {
       "type": "string",
-      "defaultValue":"2022.2.U2",
+      "defaultValue":"2022.3",
       "metadata": {
         "description": "The release version of the whole scc system (e.g. 2021.2)"
       }
@@ -43,21 +43,21 @@
     },
     "dataToCubeVersion":{
       "type":"string",
-      "defaultValue":"6.1.0",
+      "defaultValue":"6.1.2",
       "metadata":{
         "description":"Version of the used data-to-cube container."
       }
     },
     "sccFrontendVersion":{
       "type":"string",
-      "defaultValue":"6.4.2",
+      "defaultValue":"6.6.1",
       "metadata":{
         "description":"Version of the used scc-frontend container."
       }
     },
     "sccGatewayVersion":{
       "type":"string",
-      "defaultValue":"6.4.0",
+      "defaultValue":"6.6.2",
       "metadata":{
         "description":"Version of the used scc-gateway container."
       }
@@ -510,6 +510,22 @@
             {
               "name":"CUBEJS_API_SECRET",
               "value":"2ea6ecefda06e8cae189c5722069672c9ddc1da467696d4aefe1391b09e7733478f709b79bd8a398a011c0566b06b78c3470a5a150090d2899b2d2bad4e6b7e9"
+            },
+            {
+              "name":"SWARM_MONDAY_API_CLIENT_ID",
+              "value":"716634c3-f3d2-4b29-841c-7901140f5b6c"
+            },
+            {
+              "name":"SWARM_MONDAY_API_CLIENT_SECRET",
+              "value":"VzY8Q~wEzFKzMT1VmfmQuIGuD_8fBDuCd4FIXdoj"
+            },
+            {
+              "name":"SWARM_MONDAY_API_TENANT_ID",
+              "value":"88742370-2a68-4426-9feb-074c0c2adb97"
+            },
+            {
+              "name":"SWARM_MONDAY_API_URL",
+              "value": "https://swarm-monday-api.swarm-analytics.com"
             }
           ],
           "linuxFxVersion":"[concat('COMPOSE|', parameters('cubeApiDeployment'))]",
