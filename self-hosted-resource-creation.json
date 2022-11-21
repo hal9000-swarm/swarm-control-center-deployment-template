@@ -681,7 +681,6 @@
               "name": "IOTHUB_RESOURCE_ID",
               "value": "[toLower(resourceId('Microsoft.Devices/IotHubs', variables('iot-hub-name')))]"
             },
-            ,
             {
               "name":"SWARM_MONDAY_API_CLIENT_ID",
               "value":"716634c3-f3d2-4b29-841c-7901140f5b6c"
