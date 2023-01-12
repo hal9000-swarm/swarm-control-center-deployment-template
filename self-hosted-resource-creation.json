@@ -129,7 +129,7 @@
     "scc-gateway-name":"[concat( parameters('service-name'), '-control-center-api')]",
     "functionsStorageAccountName":"[concat('functions', parameters('postfix'))]",
     "anprStorageAccountName":"[concat('iothub', parameters('postfix'))]",
-    "db-host-port": "string.getStringBetween(parameters('dbJdbcConnectionString'), 'jdbc:sqlserver://')"
+    "db-host-port": "[string.getStringBetween(parameters('dbJdbcConnectionString'), 'jdbc:sqlserver://')]"
   },
   "functions": [
     {
