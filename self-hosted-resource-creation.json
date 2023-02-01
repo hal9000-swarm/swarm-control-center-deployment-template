@@ -50,7 +50,7 @@
     },
     "sccFrontendVersion":{
       "type":"string",
-      "defaultValue":"7.0.0",
+      "defaultValue":"7.0.1",
       "metadata":{
         "description":"Version of the used scc-frontend container."
       }
