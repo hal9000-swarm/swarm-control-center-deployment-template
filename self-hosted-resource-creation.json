@@ -43,7 +43,7 @@
     },
     "dataToCubeVersion":{
       "type":"string",
-      "defaultValue":"7.0.5",
+      "defaultValue":"7.0.6",
       "metadata":{
         "description":"Version of the used data-to-cube container."
       }
