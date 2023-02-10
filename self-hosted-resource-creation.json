@@ -30,7 +30,7 @@
     },
     "sccGlobalVersion": {
       "type": "string",
-      "defaultValue":"2022.3",
+      "defaultValue":"2023.1.EA",
       "metadata": {
         "description": "The release version of the whole scc system (e.g. 2021.2)"
       }
@@ -43,21 +43,21 @@
     },
     "dataToCubeVersion":{
       "type":"string",
-      "defaultValue":"6.1.2",
+      "defaultValue":"7.0.6",
       "metadata":{
         "description":"Version of the used data-to-cube container."
       }
     },
     "sccFrontendVersion":{
       "type":"string",
-      "defaultValue":"6.6.1",
+      "defaultValue":"7.0.1",
       "metadata":{
         "description":"Version of the used scc-frontend container."
       }
     },
     "sccGatewayVersion":{
       "type":"string",
-      "defaultValue":"6.6.2",
+      "defaultValue":"7.0.0",
       "metadata":{
         "description":"Version of the used scc-gateway container."
       }
@@ -284,7 +284,7 @@
           }
         },
         "cloudToDevice":{
-          "defaultTtlAsIso8601":"PT1H",
+          "defaultTtlAsIso8601":"PT18H",
           "maxDeliveryCount":10,
           "feedback":{
             "ttlAsIso8601":"PT1H",
