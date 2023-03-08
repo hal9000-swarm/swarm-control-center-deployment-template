@@ -30,7 +30,7 @@
     },
     "sccGlobalVersion": {
       "type": "string",
-      "defaultValue":"2023.1.EA",
+      "defaultValue":"2023.1",
       "metadata": {
         "description": "The release version of the whole scc system (e.g. 2021.2)"
       }
@@ -43,21 +43,21 @@
     },
     "dataToCubeVersion":{
       "type":"string",
-      "defaultValue":"7.0.6",
+      "defaultValue":"7.1.0",
       "metadata":{
         "description":"Version of the used data-to-cube container."
       }
     },
     "sccFrontendVersion":{
       "type":"string",
-      "defaultValue":"7.0.1",
+      "defaultValue":"7.1.1",
       "metadata":{
         "description":"Version of the used scc-frontend container."
       }
     },
     "sccGatewayVersion":{
       "type":"string",
-      "defaultValue":"7.0.0",
+      "defaultValue":"7.1.0",
       "metadata":{
         "description":"Version of the used scc-gateway container."
       }
